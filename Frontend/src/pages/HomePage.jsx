@@ -4,18 +4,21 @@ import { Link } from "react-router-dom";
 import Navbar from '../components/common/Navbar';
 import { useAuth } from '../context/AuthContext';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBraille, faHands, faChartBar, faGamepad, faBrain } from '@fortawesome/free-solid-svg-icons';
+
 const features = [
-  { path: '/braille', icon: '⠿', label: 'Braille System', short: 'Text to Braille conversion hub.', detail: 'Convert standard text into tactile Braille patterns instantly with our high-fidelity translation engine.', color: '#a855f7' },
-  { path: '/sign-language', icon: '🤟', label: 'Sign Language', short: 'AI-powered gesture learning.', detail: 'Learn hand gestures through real-time AI feedback, designed to bridge communication gaps for the hearing impaired.', color: '#3b82f6' },
-  { path: '/dashboard', icon: '📊', label: 'My Dashboard', short: 'Visualize your learning stats.', detail: 'Monitor your academic journey with integrated behavioral insights and progress tracking.', color: '#22c55e' },
-  { path: '/games', icon: '🎮', label: 'Games for Everyone', short: 'Cognitive play for all abilities.', detail: 'Neuro-diverse gaming modules that adapt difficulty based on user interaction speed and focus.', color: '#eab308' },
-  { path: '/mental-health', icon: '🧠', label: 'Mental Health', short: 'Mood tracking & wellness hub.', detail: 'Access curated wellness resources and track emotional health patterns using our AI sentiment tools.', color: '#f43f5e' },
+  { path: '/braille', icon: <FontAwesomeIcon icon={faBraille} className="text-[#a855f7]" />, label: 'Braille System', short: 'Text to Braille conversion hub.', detail: 'Convert standard text into tactile Braille patterns instantly with our high-fidelity translation engine.', color: '#a855f7' },
+  { path: '/sign-language', icon: <FontAwesomeIcon icon={faHands} className="text-[#3b82f6]" />, label: 'Sign Language', short: 'AI-powered gesture learning.', detail: 'Learn hand gestures through real-time AI feedback, designed to bridge communication gaps for the hearing impaired.', color: '#3b82f6' },
+  { path: '/dashboard', icon: <FontAwesomeIcon icon={faChartBar} className="text-[#22c55e]" />, label: 'My Dashboard', short: 'Visualize your learning stats.', detail: 'Monitor your academic journey with integrated behavioral insights and progress tracking.', color: '#22c55e' },
+  { path: '/games', icon: <FontAwesomeIcon icon={faGamepad} className="text-[#eab308]" />, label: 'Games for Everyone', short: 'Cognitive play for all abilities.', detail: 'Neuro-diverse gaming modules that adapt difficulty based on user interaction speed and focus.', color: '#eab308' },
+  { path: '/mental-health', icon: <FontAwesomeIcon icon={faBrain} className="text-[#f43f5e]" />, label: 'Mental Health', short: 'Mood tracking & wellness hub.', detail: 'Access curated wellness resources and track emotional health patterns using our AI sentiment tools.', color: '#f43f5e' },
 ];
 
 export default function HomePage() {
   const { user } = useAuth();
   const targetRef = useRef(null);
-  
+
   // Progress for the timeline line
   const { scrollYProgress } = useScroll({
     target: targetRef,
@@ -27,11 +30,11 @@ export default function HomePage() {
   return (
     <div className="bg-[#f5f5f7] dark:bg-[#050a14] transition-colors duration-500 selection:bg-[#0071e3]">
       <Navbar />
-      
+
       {/* ── SECTION 1: THE SPIRAL ORBIT (HERO) ── */}
       <section className="h-screen flex flex-col items-center justify-center overflow-hidden sticky top-0 z-10">
         <div className="text-center mb-16 z-20">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl font-extrabold tracking-tighter text-[#1d1d1f] dark:text-white"
           >
@@ -75,9 +78,9 @@ export default function HomePage() {
       {/* ── SECTION 2: TIMELINE FEATURE PANEL ── */}
       <section ref={targetRef} className="relative z-20 bg-white dark:bg-[#050a14] pt-20 pb-40 px-10">
         <div className="max-w-5xl mx-auto relative">
-          
+
           {/* Vertical Timeline Line */}
-          <motion.div 
+          <motion.div
             style={{ scaleY }}
             className="absolute left-0 md:left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-[#0071e3] to-transparent origin-top hidden md:block"
           />
@@ -101,7 +104,7 @@ export default function HomePage() {
 function TimelineItem({ feature, index }) {
   const isEven = index % 2 === 0;
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
@@ -110,8 +113,8 @@ function TimelineItem({ feature, index }) {
       {/* Visual Side */}
       <div className="w-full md:w-[45%] flex justify-center">
         <div className="relative group">
-            <div className="absolute inset-0 bg-[#0071e3]/20 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-            <span className="text-[120px] relative z-10 filter drop-shadow-2xl">{feature.icon}</span>
+          <div className="absolute inset-0 bg-[#0071e3]/20 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+          <span className="text-[120px] relative z-10 filter drop-shadow-2xl">{feature.icon}</span>
         </div>
       </div>
 
@@ -123,7 +126,7 @@ function TimelineItem({ feature, index }) {
         <h3 className="text-4xl font-extrabold tracking-tighter mb-4 dark:text-white">{feature.label}</h3>
         <p className="text-[#0071e3] font-black text-[10px] uppercase tracking-widest mb-4 italic">{feature.short}</p>
         <p className="text-black/50 dark:text-white/40 font-medium text-lg leading-relaxed mb-8">{feature.detail}</p>
-        <Link 
+        <Link
           to={feature.path}
           className="inline-block bg-black dark:bg-white text-white dark:text-black px-8 py-3 rounded-full font-bold text-sm hover:scale-105 transition-transform"
         >

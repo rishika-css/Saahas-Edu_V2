@@ -5,6 +5,8 @@ import VideoPlayer from "../components/courses/VideoPlayer";
 import TranscriptPanel from "../components/courses/TranscriptPanel";
 import NextVideoSidebar from "../components/courses/NextVideoSidebar";
 import { COURSES, SUBJECTS } from "../data/CourseData";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFilm, faFileAlt, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 
 export default function VideoPlayerPage() {
   const { subject, videoId } = useParams();
@@ -98,8 +100,8 @@ export default function VideoPlayerPage() {
     return (
       <div className="min-h-screen bg-[#060a10] flex items-center justify-center">
         <div className="text-center text-white/30">
-          <div className="text-5xl mb-4">🎬</div>
-          <p className="font-bold">Video not found</p>
+          <div className="text-5xl mb-4" style={{ color: "#a855f7" }}><FontAwesomeIcon icon={faFilm} /></div>
+          <p className="font-bold text-white">Video not found</p>
           <button
             onClick={() => navigate("/courses")}
             className="mt-4 text-sm text-purple-400 hover:underline"
@@ -142,7 +144,7 @@ export default function VideoPlayerPage() {
             style={{ color: subj.color }}
             className="hover:opacity-80 transition"
           >
-            {subj.emoji} {subj.title}
+            <FontAwesomeIcon icon={subj.icon} className="mr-1" /> {subj.title}
           </button>
           <span>/</span>
           <span className="text-white/50 truncate max-w-48">{video.title}</span>
@@ -176,7 +178,7 @@ export default function VideoPlayerPage() {
                       style={{ background: `linear-gradient(135deg, ${subj.color}, ${subj.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
                       className="font-black text-sm"
                     >
-                      {subj.emoji} {subj.title}
+                      <FontAwesomeIcon icon={subj.icon} className="mr-1" /> {subj.title}
                     </span>
                     <span className="text-white/20">·</span>
                     <span className="text-white/40 text-sm">⏱ {video.duration}</span>
@@ -232,7 +234,11 @@ export default function VideoPlayerPage() {
                     }}
                     className="capitalize px-5 py-2.5 rounded-xl text-sm font-black transition-all"
                   >
-                    {tab === "transcript" ? "📝 Transcript" : "ℹ️ About"}
+                    {tab === "transcript" ? (
+                      <><FontAwesomeIcon icon={faFileAlt} className="mr-1" /> Transcript</>
+                    ) : (
+                      <><FontAwesomeIcon icon={faInfoCircle} className="mr-1" /> About</>
+                    )}
                   </button>
                 ))}
               </div>
@@ -265,8 +271,8 @@ export default function VideoPlayerPage() {
                       <button
                         onClick={toggleLiveTranscription}
                         className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all border ${isLiveEnabled
-                            ? "bg-white/10 border-white/20 text-white"
-                            : "bg-transparent border-white/10 text-white/40 hover:text-white"
+                          ? "bg-white/10 border-white/20 text-white"
+                          : "bg-transparent border-white/10 text-white/40 hover:text-white"
                           }`}
                       >
                         {isLiveEnabled ? "🔴 Live Gen On" : "Enable Live Gen"}
@@ -346,7 +352,7 @@ export default function VideoPlayerPage() {
                     style={{ borderColor: "rgba(255,255,255,0.05)" }}
                     className="w-full flex items-center gap-3 p-3 rounded-xl border hover:bg-white/5 transition-all text-left group"
                   >
-                    <span className="text-2xl">{s.emoji}</span>
+                    <span className="text-2xl"><FontAwesomeIcon icon={s.icon} /></span>
                     <div className="flex-1">
                       <p className="text-white/70 text-sm font-bold group-hover:text-white transition">{s.title}</p>
                       <p className="text-white/25 text-xs">{COURSES[s.id].length} lessons</p>

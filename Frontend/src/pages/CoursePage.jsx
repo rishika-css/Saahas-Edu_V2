@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Navbar from "../components/common/Navbar";
 import { COURSES, SUBJECTS } from "../data/CourseData";
 
@@ -42,7 +43,7 @@ function VideoCard({ video, subject, index, onClick }) {
         className="relative aspect-video flex items-center justify-center overflow-hidden"
       >
         <span className="text-5xl opacity-60 group-hover:scale-110 transition-transform duration-300">
-          {subj.emoji}
+          <FontAwesomeIcon icon={subj.icon} />
         </span>
         {/* Play overlay */}
         <div
@@ -106,7 +107,7 @@ function SubjectTab({ subj, active, onClick }) {
       }}
       className="flex items-center gap-2.5 px-6 py-3 rounded-2xl border font-black text-sm"
     >
-      <span className="text-xl">{subj.emoji}</span>
+      <span className="text-xl"><FontAwesomeIcon icon={subj.icon} /></span>
       <span>{subj.title}</span>
       <span
         style={{
@@ -197,9 +198,9 @@ export default function CoursesPage() {
 
         {/* Empty state if no videos */}
         {videos.length === 0 && (
-          <div className="text-center py-24 text-white/20">
-            <div className="text-6xl mb-4">{subj.emoji}</div>
-            <p className="font-bold text-lg">No videos yet — coming soon!</p>
+          <div className="text-center py-24 text-white/30">
+            <div className="text-6xl mb-4" style={{ color: subj.color }}><FontAwesomeIcon icon={subj.icon} /></div>
+            <p className="font-bold text-lg text-white">No videos yet — coming soon!</p>
           </div>
         )}
       </main>

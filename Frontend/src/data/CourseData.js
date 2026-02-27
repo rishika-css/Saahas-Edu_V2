@@ -1,11 +1,13 @@
 // ─── Replace AWS URLs with your actual S3/CloudFront URLs ───────────────────
 export const AWS_BASE_URL = "https://d2yammpp0y6r1t.cloudfront.net";
 
+import { faCalculator, faMicroscope, faBookOpen } from '@fortawesome/free-solid-svg-icons';
+
 export const SUBJECTS = {
   maths: {
     id: "maths",
     title: "Mathematics",
-    emoji: "🔢",
+    icon: faCalculator,
     color: "#06d6a0",
     accent: "#4cc9f0",
     description: "Numbers, geometry, and problem solving for every learner.",
@@ -15,7 +17,7 @@ export const SUBJECTS = {
   science: {
     id: "science",
     title: "Science",
-    emoji: "🔬",
+    icon: faMicroscope,
     color: "#9b5de5",
     accent: "#f9c74f",
     description: "Explore the living world, earth, space, and matter.",
@@ -25,7 +27,7 @@ export const SUBJECTS = {
   english: {
     id: "english",
     title: "English",
-    emoji: "📖",
+    icon: faBookOpen,
     color: "#ff6b6b",
     accent: "#ffd166",
     description: "Reading, writing, grammar and storytelling skills.",
