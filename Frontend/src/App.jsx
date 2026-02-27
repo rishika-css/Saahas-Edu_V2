@@ -14,6 +14,7 @@ import JournalPage from "./pages/JournalPage";
 import TestPage from "./pages/TestPage";
 import CoursesPage from "./pages/CoursePage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
+import InclusiveLearnApp from "./components/game/Inclusivelearn";
 
 // Auth + Layout
 import { AuthGuard } from "./components/auth/AuthGuard";
@@ -35,6 +36,18 @@ export default function App() {
       <AccessibilityProvider>
         <BrowserRouter>
           <Routes>
+            <Route
+              path="/"
+              element={
+                <AccessibleLayout>
+                  <LandingPage />
+                </AccessibleLayout>
+              }
+            />
+            <Route path="/login" element={<AccessibleLayout>
+              <LoginPage />
+            </AccessibleLayout>} />{" "}
+            {/* FIXED: was duplicate "/" */}
 
             {/* ── Public Routes ── */}
             <Route path="/" element={<LandingPage />} />
@@ -145,6 +158,17 @@ export default function App() {
                 </AuthGuard>
               }
             />
+            <Route
+              path="/games"
+              element={
+                <AuthGuard>
+                  <AccessibleLayout>
+                    <InclusiveLearnApp />
+                  </AccessibleLayout>
+                </AuthGuard>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" />} />
 
             {/* ── Fallback ── */}
             <Route path="*" element={<Navigate to="/" />} />
