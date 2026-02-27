@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { motion, useSpring, useScroll, useTransform } from "framer-motion";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBookOpen, faCalculator, faMicroscope, faBolt } from '@fortawesome/free-solid-svg-icons';
 
 // ─── Custom Magnetic Cursor (Lando Style) ────────────────────────────────
 function CustomCursor() {
@@ -167,9 +169,9 @@ export default function LandingPage() {
   }, []);
 
   const courses = [
-    { id: "english", emoji: "📖", title: "English", color: "#ff6b6b", accent: "#D2FF00", topics: ["Reading", "Grammar", "Sign Language"] },
-    { id: "maths", emoji: "🔢", title: "Mathematics", color: "#06d6a0", accent: "#D2FF00", topics: ["Counting", "Geometry", "Visual Aids"] },
-    { id: "science", emoji: "🔬", title: "Science", color: "#9b5de5", accent: "#D2FF00", topics: ["Living World", "Experiments", "Space"] },
+    { id: "english", emoji: <FontAwesomeIcon icon={faBookOpen} />, title: "English", color: "#ff6b6b", accent: "#D2FF00", topics: ["Reading", "Grammar", "Sign Language"] },
+    { id: "maths", emoji: <FontAwesomeIcon icon={faCalculator} />, title: "Mathematics", color: "#06d6a0", accent: "#D2FF00", topics: ["Counting", "Geometry", "Visual Aids"] },
+    { id: "science", emoji: <FontAwesomeIcon icon={faMicroscope} />, title: "Science", color: "#9b5de5", accent: "#D2FF00", topics: ["Living World", "Experiments", "Space"] },
   ];
 
   return (
@@ -274,9 +276,9 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center px-10">
           <motion.div
             whileInView={{ scale: [0.9, 1.1, 1] }}
-            className="text-8xl mb-10"
+            className="text-8xl mb-10 text-[#D2FF00]"
           >
-            ⚡
+            <FontAwesomeIcon icon={faBolt} />
           </motion.div>
           <h2 className="font-display text-5xl md:text-7xl uppercase italic mb-10 leading-tight">
             Ready to <span className="text-[#D2FF00]">Start?</span>

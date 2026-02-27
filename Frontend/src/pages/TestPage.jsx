@@ -11,6 +11,8 @@ import AccessibilityToolbar from '../components/AccessibilityToolbar';
 import FocusTileOverlay from '../components/FocusTileOverlay';
 import AdhdDetectionModal from '../components/AdhdDetectionModal';
 import { useAdhdMouseDetection } from '../hooks/useAdhdMouseDetection';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHourglassHalf, faFrown, faTrophy, faHandsClapping, faDumbbell, faClipboardList, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 export default function TestPage() {
   const { user } = useAuth();
@@ -129,7 +131,7 @@ export default function TestPage() {
         justifyContent: 'center', background: '#fdf6f0',
       }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⏳</div>
+          <div style={{ fontSize: '3rem', marginBottom: '12px' }}><FontAwesomeIcon icon={faHourglassHalf} /></div>
           <p style={{ color: '#7a5c4a', fontWeight: 600 }}>Preparing your test...</p>
           <p style={{ color: '#b5a08a', fontSize: '0.85rem', marginTop: '8px' }}>
             Loading AI models for gaze & behavior tracking...
@@ -147,7 +149,7 @@ export default function TestPage() {
         justifyContent: 'center', background: '#fdf6f0',
       }}>
         <div style={{ textAlign: 'center', maxWidth: '400px' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>😕</div>
+          <div style={{ fontSize: '3rem', marginBottom: '12px' }}><FontAwesomeIcon icon={faFrown} /></div>
           <h2 style={{ color: '#d9623f', marginBottom: '8px' }}>Something went wrong</h2>
           <p style={{ color: '#7a5c4a', marginBottom: '20px' }}>{error}</p>
           <button
@@ -173,7 +175,7 @@ export default function TestPage() {
       }}>
         <div style={{ maxWidth: '680px', margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: '4rem', marginBottom: '16px' }}>
-            {result.score >= 80 ? '🏆' : result.score >= 50 ? '👏' : '💪'}
+            {result.score >= 80 ? <FontAwesomeIcon icon={faTrophy} style={{ color: '#f9ca24' }} /> : result.score >= 50 ? <FontAwesomeIcon icon={faHandsClapping} style={{ color: '#f0932b' }} /> : <FontAwesomeIcon icon={faDumbbell} style={{ color: '#eb4d4b' }} />}
           </div>
           <h1 style={{ color: '#3d2c1e', fontSize: '2rem', marginBottom: '8px' }}>
             Test Complete!
@@ -226,7 +228,7 @@ export default function TestPage() {
                   {i + 1}. {r.question}
                 </p>
                 <p style={{ fontSize: '0.9rem', color: r.isCorrect ? '#5cb85c' : '#e74c3c' }}>
-                  Your answer: {r.selected} {r.isCorrect ? '✓' : '✗'}
+                  Your answer: {r.selected} {r.isCorrect ? <FontAwesomeIcon icon={faCheck} /> : <FontAwesomeIcon icon={faTimes} />}
                 </p>
                 {!r.isCorrect && (
                   <p style={{ fontSize: '0.85rem', color: '#5cb85c' }}>
@@ -266,7 +268,7 @@ export default function TestPage() {
           alignItems: 'center', marginBottom: '20px',
         }}>
           <h2 style={{ color: '#3d2c1e', fontWeight: 700, fontSize: '1.3rem', margin: 0 }}>
-            📝 Adaptive Test
+            <FontAwesomeIcon icon={faClipboardList} className="mr-2" /> Adaptive Test
           </h2>
           <Timer
             timeRemaining={timeRemaining}

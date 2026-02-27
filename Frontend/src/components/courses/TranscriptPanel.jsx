@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileAlt } from '@fortawesome/free-solid-svg-icons';
 
 export default function TranscriptPanel({ transcript = [], currentTime, color = "#06d6a0", accent = "#4cc9f0" }) {
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -28,7 +30,7 @@ export default function TranscriptPanel({ transcript = [], currentTime, color = 
   if (!transcript || transcript.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-40 text-white/20 text-sm">
-        <span className="text-3xl mb-2">📝</span>
+        <span className="text-3xl mb-2"><FontAwesomeIcon icon={faFileAlt} /></span>
         No transcript available
       </div>
     );
@@ -71,8 +73,8 @@ export default function TranscriptPanel({ transcript = [], currentTime, color = 
                 color: isActive
                   ? "#ffffff"
                   : isPast
-                  ? "rgba(255,255,255,0.35)"
-                  : "rgba(255,255,255,0.5)",
+                    ? "rgba(255,255,255,0.35)"
+                    : "rgba(255,255,255,0.5)",
                 fontWeight: isActive ? 700 : 400,
                 fontSize: isActive ? "0.95rem" : "0.875rem",
                 transition: "all 0.3s ease",
