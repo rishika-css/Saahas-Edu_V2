@@ -12,25 +12,45 @@ router.post('/register', async (req, res) => {
     try {
         const { name, email, password, accessibilityProfile } = req.body;
 
+        // 1. Validation: Ensure all fields are present
+        if (!name || !email || !password) {
+            return res.status(400).json({ msg: 'Please enter all required fields' });
+        }
+
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ msg: 'Student already registered' });
 
         user = new User({
             name,
             email,
-            password, // Password will be hashed automatically by the model pre-save hook
+            password, 
             accessibilityProfile
         });
 
         await user.save();
 
-        // Return a token so they are logged in immediately after signing up
+        // 2. Safety Check: Ensure JWT_SECRET is loaded
+        if (!process.env.JWT_SECRET) {
+            console.error('CRITICAL: JWT_SECRET is not defined in .env');
+            return res.status(500).json({ msg: 'Server Configuration Error' });
+        }
+
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
-        res.status(201).json({ token, user });
+        
+        // Return structured user data to avoid sending sensitive info back
+        res.status(201).json({ 
+            token, 
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                accessibilityProfile: user.accessibilityProfile
+            } 
+        });
 
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error during intake');
+        console.error("Registration Error:", err.message);
+        res.status(500).json({ msg: 'Server error during intake', error: err.message });
     }
 });
 
@@ -39,15 +59,24 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
-        // 1. Check if user exists
+        // 1. Validation
+        if (!email || !password) {
+            return res.status(400).json({ msg: 'Please enter all fields' });
+        }
+
         let user = await User.findOne({ email });
         if (!user) return res.status(400).json({ msg: 'Invalid Credentials' });
 
-        // 2. Compare the plain-text password with the hashed password in DB
+        // 2. Compare the plain-text password with the hashed password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ msg: 'Invalid Credentials' });
 
-        // 3. Create a JWT (The "Key" your frontend needs to stay logged in)
+        // 3. Safety Check: JWT_SECRET
+        if (!process.env.JWT_SECRET) {
+            console.error('CRITICAL: JWT_SECRET is not defined in .env');
+            return res.status(500).json({ msg: 'Server Configuration Error' });
+        }
+
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
         res.json({
@@ -59,8 +88,8 @@ router.post('/login', async (req, res) => {
             }
         });
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        console.error("Login Error:", err.message);
+        res.status(500).json({ msg: 'Server Error', error: err.message });
     }
 });
 
@@ -68,10 +97,13 @@ router.post('/login', async (req, res) => {
 // @desc    Get current user profile (Testing Auth)
 router.get('/me', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user).select('-password');
+        // req.user comes from your auth middleware
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) return res.status(404).json({ msg: 'User not found' });
         res.json(user);
     } catch (err) {
-        res.status(500).send('Server Error');
+        console.error("Auth Route Error:", err.message);
+        res.status(500).json({ msg: 'Server Error' });
     }
 });
 

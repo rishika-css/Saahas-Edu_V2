@@ -35,24 +35,9 @@ export default function App() {
       <AccessibilityProvider>
         <BrowserRouter>
           <Routes>
-
-            {/* ── Public Routes ── */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-
-            {/* ── Dashboard ── */}
-            <Route
-              path="/dashboard"
-              element={
-                <AuthGuard>
-                  <AccessibleLayout>
-                    <StudentDashboardPage />
-                  </AccessibleLayout>
-                </AuthGuard>
-              }
-            />
-
-            {/* ── Home ── */}
+            <Route path="/login" element={<LoginPage />} />{" "}
+            {/* FIXED: was duplicate "/" */}
             <Route
               path="/home"
               element={
