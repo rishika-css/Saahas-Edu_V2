@@ -12,7 +12,6 @@ export default function VideoPlayerPage() {
   const { subject, videoId } = useParams();
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(0);
-  const [activeTab, setActiveTab] = useState("transcript"); // "transcript" | "about"
 
   // Live Transcript State
   const [liveTranscript, setLiveTranscript] = useState([]);
@@ -150,8 +149,8 @@ export default function VideoPlayerPage() {
           <span className="text-white/50 truncate max-w-48">{video.title}</span>
         </div>
 
-        {/* Main layout: video+info LEFT, sidebar RIGHT */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
+        {/* Main layout: video+next videos LEFT, transcript RIGHT */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6">
 
           {/* ── LEFT COLUMN ── */}
           <div className="space-y-5">
@@ -221,118 +220,7 @@ export default function VideoPlayerPage() {
             {/* Divider */}
             <div className="border-t border-white/5" />
 
-            {/* Tabs */}
-            <div>
-              <div className="flex gap-1 mb-5">
-                {["transcript", "about"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    style={{
-                      background: activeTab === tab ? `linear-gradient(135deg, ${subj.color}, ${subj.accent})` : "rgba(255,255,255,0.04)",
-                      color: activeTab === tab ? "#fff" : "rgba(255,255,255,0.4)",
-                    }}
-                    className="capitalize px-5 py-2.5 rounded-xl text-sm font-black transition-all"
-                  >
-                    {tab === "transcript" ? (
-                      <><FontAwesomeIcon icon={faFileAlt} className="mr-1" /> Transcript</>
-                    ) : (
-                      <><FontAwesomeIcon icon={faInfoCircle} className="mr-1" /> About</>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {/* Transcript */}
-              {activeTab === "transcript" && (
-                <div
-                  style={{ borderColor: "rgba(255,255,255,0.06)" }}
-                  className="bg-[#0a0f18] rounded-2xl border p-5"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <span
-                        style={{ background: `linear-gradient(135deg, ${subj.color}, ${subj.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                        className="font-display font-black text-lg"
-                      >
-                        {isLiveEnabled ? "Live Hearing Transcript" : "Standard Transcript"}
-                      </span>
-                      {isLiveEnabled && (
-                        <div
-                          style={{ background: subj.color }}
-                          className="w-2 h-2 rounded-full animate-pulse"
-                        />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-white/20 text-xs hidden sm:inline">
-                        Auto-scrolls with video
-                      </span>
-                      <button
-                        onClick={toggleLiveTranscription}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all border ${isLiveEnabled
-                          ? "bg-white/10 border-white/20 text-white"
-                          : "bg-transparent border-white/10 text-white/40 hover:text-white"
-                          }`}
-                      >
-                        {isLiveEnabled ? <><FontAwesomeIcon icon={faCircle} style={{ color: '#ef4444' }} /> Live Gen On</> : "Enable Live Gen"}
-                      </button>
-                    </div>
-                  </div>
-                  <TranscriptPanel
-                    transcript={isLiveEnabled ? liveTranscript : video.transcript}
-                    currentTime={currentTime}
-                    color={subj.color}
-                    accent={subj.accent}
-                  />
-                </div>
-              )}
-
-              {/* About */}
-              {activeTab === "about" && (
-                <div
-                  style={{ borderColor: "rgba(255,255,255,0.06)" }}
-                  className="bg-[#0a0f18] rounded-2xl border p-6 space-y-4"
-                >
-                  <p className="text-white/70 leading-relaxed text-sm">{video.description}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { label: "Subject", value: subj.title },
-                      { label: "Level", value: video.level },
-                      { label: "Duration", value: video.duration },
-                      { label: "Lesson", value: `${currentIndex + 1} / ${videos.length}` },
-                    ].map((item) => (
-                      <div key={item.label} className="bg-white/4 rounded-xl p-3">
-                        <p className="text-white/30 text-xs uppercase tracking-widest font-black mb-1">{item.label}</p>
-                        <p className="text-white font-bold text-sm">{item.value}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Accessibility features */}
-                  <div>
-                    <p className="text-white/30 text-xs uppercase tracking-widest font-black mb-3">Accessibility</p>
-                    <div className="flex flex-wrap gap-2">
-                      {[
-                        { icon: faBraille, label: "Braille Ready" },
-                        { icon: faHandPeace, label: "Sign Language" },
-                        { icon: faFileLines, label: "Transcript" },
-                        { icon: faVolumeHigh, label: "Audio Support" },
-                        { icon: faPalette, label: "High Contrast" },
-                      ].map((f) => (
-                        <span key={f.label} className="bg-white/5 border border-white/8 text-white/50 text-xs px-3 py-1.5 rounded-full font-bold">
-                          <FontAwesomeIcon icon={f.icon} className="mr-1" /> {f.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── RIGHT SIDEBAR ── */}
-          <div className="space-y-5">
+            {/* Next Videos — below the player */}
             <div
               style={{ borderColor: "rgba(255,255,255,0.06)" }}
               className="bg-[#0a0f18] rounded-2xl border p-4"
@@ -341,6 +229,94 @@ export default function VideoPlayerPage() {
                 currentVideoId={videoId}
                 videos={videos}
                 subject={subject}
+              />
+            </div>
+
+            {/* About / Description */}
+            <div
+              style={{ borderColor: "rgba(255,255,255,0.06)" }}
+              className="bg-[#0a0f18] rounded-2xl border p-6 space-y-4"
+            >
+              <span
+                style={{ background: `linear-gradient(135deg, ${subj.color}, ${subj.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                className="font-display font-black text-lg"
+              >
+                <FontAwesomeIcon icon={faInfoCircle} className="mr-1" /> About This Lesson
+              </span>
+              <p className="text-white/70 leading-relaxed text-sm">{video.description}</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Subject", value: subj.title },
+                  { label: "Level", value: video.level },
+                  { label: "Duration", value: video.duration },
+                  { label: "Lesson", value: `${currentIndex + 1} / ${videos.length}` },
+                ].map((item) => (
+                  <div key={item.label} className="bg-white/4 rounded-xl p-3">
+                    <p className="text-white/30 text-xs uppercase tracking-widest font-black mb-1">{item.label}</p>
+                    <p className="text-white font-bold text-sm">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Accessibility features */}
+              <div>
+                <p className="text-white/30 text-xs uppercase tracking-widest font-black mb-3">Accessibility</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { icon: faBraille, label: "Braille Ready" },
+                    { icon: faHandPeace, label: "Sign Language" },
+                    { icon: faFileLines, label: "Transcript" },
+                    { icon: faVolumeHigh, label: "Audio Support" },
+                    { icon: faPalette, label: "High Contrast" },
+                  ].map((f) => (
+                    <span key={f.label} className="bg-white/5 border border-white/8 text-white/50 text-xs px-3 py-1.5 rounded-full font-bold">
+                      <FontAwesomeIcon icon={f.icon} className="mr-1" /> {f.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── RIGHT SIDEBAR — Transcript ── */}
+          <div className="space-y-5">
+
+            {/* Transcript Panel */}
+            <div
+              style={{ borderColor: "rgba(255,255,255,0.06)" }}
+              className="bg-[#0a0f18] rounded-2xl border p-5 xl:sticky xl:top-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span
+                    style={{ background: `linear-gradient(135deg, ${subj.color}, ${subj.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                    className="font-display font-black text-lg"
+                  >
+                    <FontAwesomeIcon icon={faFileAlt} className="mr-1" />
+                    {isLiveEnabled ? "Live Transcript" : "Transcript"}
+                  </span>
+                  {isLiveEnabled && (
+                    <div
+                      style={{ background: subj.color }}
+                      className="w-2 h-2 rounded-full animate-pulse"
+                    />
+                  )}
+                </div>
+                <button
+                  onClick={toggleLiveTranscription}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all border ${isLiveEnabled
+                    ? "bg-white/10 border-white/20 text-white"
+                    : "bg-transparent border-white/10 text-white/40 hover:text-white"
+                    }`}
+                >
+                  {isLiveEnabled ? <><FontAwesomeIcon icon={faCircle} style={{ color: '#ef4444' }} /> Live On</> : "Live Gen"}
+                </button>
+              </div>
+              <TranscriptPanel
+                transcript={isLiveEnabled ? liveTranscript : video.transcript}
+                currentTime={currentTime}
+                color={subj.color}
+                accent={subj.accent}
               />
             </div>
 
