@@ -12,6 +12,7 @@ import LandingPage from "./pages/LandingPage";
 import TestPage from "./pages/TestPage";
 import CoursesPage from "./pages/CoursePage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
+import InclusiveLearnApp from "./components/game/Inclusivelearn";
 import AccessibilitySidebar from "./components/AccessibilitySidebar";
 
 function AccessibleLayout({ children }) {
@@ -38,8 +39,8 @@ export default function App() {
               }
             />
             <Route path="/login" element={<AccessibleLayout>
-                  <LoginPage />
-                </AccessibleLayout>} />{" "}
+              <LoginPage />
+            </AccessibleLayout>} />{" "}
             {/* FIXED: was duplicate "/" */}
             <Route
               path="/home"
@@ -101,7 +102,6 @@ export default function App() {
                 </AuthGuard>
               }
             />
-            <Route path="*" element={<Navigate to="/" />} />
             <Route
               path="/courses"
               element={
@@ -118,6 +118,17 @@ export default function App() {
                 </AuthGuard>
               }
             />
+            <Route
+              path="/games"
+              element={
+                <AuthGuard>
+                  <AccessibleLayout>
+                    <InclusiveLearnApp />
+                  </AccessibleLayout>
+                </AuthGuard>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </BrowserRouter>
       </AccessibilityProvider>
