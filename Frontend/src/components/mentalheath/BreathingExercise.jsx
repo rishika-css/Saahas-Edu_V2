@@ -6,11 +6,13 @@
 ================================================================ */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faWind, faPause, faLungs, faSpa, faPlay, faStop, faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
 
 const PHASES = [
-    { label: 'Inhale', duration: 4, cls: 'inhale', emoji: '🌬️' },
-    { label: 'Hold', duration: 7, cls: 'hold', emoji: '⏸️' },
-    { label: 'Exhale', duration: 8, cls: 'exhale', emoji: '💨' },
+    { label: 'Inhale', duration: 4, cls: 'inhale', icon: faWind },
+    { label: 'Hold', duration: 7, cls: 'hold', icon: faPause },
+    { label: 'Exhale', duration: 8, cls: 'exhale', icon: faLungs },
 ]
 
 export default function BreathingExercise() {
@@ -70,7 +72,7 @@ export default function BreathingExercise() {
             <div className="relative flex items-center justify-center">
                 <div className={`mh-breathe-circle ${running ? phase.cls : ''}`}>
                     <div className="text-center text-white">
-                        <div className="text-3xl mb-1">{running ? phase.emoji : '🧘'}</div>
+                        <div className="text-3xl mb-1"><FontAwesomeIcon icon={running ? phase.icon : faSpa} /></div>
                         <div className="text-sm font-bold opacity-90">
                             {running ? phase.label : 'Ready'}
                         </div>
@@ -114,11 +116,11 @@ export default function BreathingExercise() {
                     <div
                         key={p.label}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${running && phaseIdx === i
-                                ? 'bg-indigo-100 text-indigo-700 scale-110'
-                                : 'bg-gray-100 text-gray-400'
+                            ? 'bg-indigo-100 text-indigo-700 scale-110'
+                            : 'bg-gray-100 text-gray-400'
                             }`}
                     >
-                        <span>{p.emoji}</span>
+                        <span><FontAwesomeIcon icon={p.icon} /></span>
                         <span>{p.label}</span>
                         <span className="opacity-60">{p.duration}s</span>
                     </div>
@@ -137,7 +139,7 @@ export default function BreathingExercise() {
                        hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5
                        active:translate-y-0"
                     >
-                        ▶ Start Breathing
+                        <FontAwesomeIcon icon={faPlay} className="mr-2" /> Start Breathing
                     </button>
                 ) : (
                     <button
@@ -146,7 +148,7 @@ export default function BreathingExercise() {
                        bg-red-50 border-2 border-red-200
                        hover:bg-red-100 transition-all"
                     >
-                        ■ Stop
+                        <FontAwesomeIcon icon={faStop} className="mr-2" /> Stop
                     </button>
                 )}
             </div>
@@ -154,7 +156,7 @@ export default function BreathingExercise() {
             {/* Cycle counter */}
             {cycles > 0 && (
                 <p className="text-xs text-gray-400 font-semibold">
-                    🔄 {cycles} cycle{cycles > 1 ? 's' : ''} completed
+                    <FontAwesomeIcon icon={faArrowsRotate} className="mr-1" /> {cycles} cycle{cycles > 1 ? 's' : ''} completed
                 </p>
             )}
         </div>

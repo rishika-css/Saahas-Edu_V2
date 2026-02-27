@@ -1,170 +1,172 @@
 import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBullseye, faBookOpen, faMouse, faRobot } from "@fortawesome/free-solid-svg-icons";
 
 /* CONDITIONS */
 
 const CONDITIONS = [
 
-{
-key:"adhd",
-label:"ADHD",
-icon:"🎯",
-color:"#3b82f6",
-threshold:.52
-},
+    {
+        key: "adhd",
+        label: "ADHD",
+        icon: faBullseye,
+        color: "#3b82f6",
+        threshold: .52
+    },
 
-{
-key:"dyslexia",
-label:"Dyslexia",
-icon:"📖",
-color:"#22c55e",
-threshold:.46
-},
+    {
+        key: "dyslexia",
+        label: "Dyslexia",
+        icon: faBookOpen,
+        color: "#22c55e",
+        threshold: .46
+    },
 
-{
-key:"motor",
-label:"Motor",
-icon:"🖱️",
-color:"#ef4444",
-threshold:.44
-}
+    {
+        key: "motor",
+        label: "Motor",
+        icon: faMouse,
+        color: "#ef4444",
+        threshold: .44
+    }
 
 ];
 
 
 /* CARD */
 
-function Card({condition,data={},latched={}}){
+function Card({ condition, data = {}, latched = {} }) {
 
-const [open,setOpen]=useState(false)
+    const [open, setOpen] = useState(false)
 
-/* SAFE ACCESS */
+    /* SAFE ACCESS */
 
-const prob=data?.probability ?? 0
+    const prob = data?.probability ?? 0
 
-const detected=
+    const detected =
 
-(latched?.[condition.key] ?? false)
+        (latched?.[condition.key] ?? false)
 
-||
+        ||
 
-(prob>=condition.threshold)
+        (prob >= condition.threshold)
 
 
-return(
+    return (
 
-<div
-style={{
-background:"#fff",
-padding:18,
-borderRadius:14,
-boxShadow:"0 3px 12px rgba(0,0,0,.05)"
-}}
+        <div
+            style={{
+                background: "#fff",
+                padding: 18,
+                borderRadius: 14,
+                boxShadow: "0 3px 12px rgba(0,0,0,.05)"
+            }}
 
->
+        >
 
-<h4>
+            <h4>
 
-{condition.icon}
+                {condition.icon && <FontAwesomeIcon icon={condition.icon} style={{ marginRight: 6 }} />}
 
-{" "}
+                {" "}
 
-{condition.label}
+                {condition.label}
 
-</h4>
+            </h4>
 
 
-<p style={{fontSize:12}}>
+            <p style={{ fontSize: 12 }}>
 
-Probability :
+                Probability :
 
-<b>
+                <b>
 
-{" "}
+                    {" "}
 
-{Math.round(prob*100)}%
+                    {Math.round(prob * 100)}%
 
-</b>
+                </b>
 
-</p>
+            </p>
 
 
-<p
+            <p
 
-style={{
+                style={{
 
-color:detected?
+                    color: detected ?
 
-condition.color
+                        condition.color
 
-:
+                        :
 
-"#888",
+                        "#888",
 
-fontWeight:700
+                    fontWeight: 700
 
-}}
+                }}
 
->
+            >
 
-{detected?
+                {detected ?
 
-"Assistance Active ✓"
+                    "Assistance Active ✓"
 
-:
+                    :
 
-"Monitoring..."
+                    "Monitoring..."
 
-}
+                }
 
-</p>
+            </p>
 
 
-<button
+            <button
 
-onClick={()=>setOpen(!open)}
+                onClick={() => setOpen(!open)}
 
-style={{
+                style={{
 
-marginTop:8,
+                    marginTop: 8,
 
-fontSize:12,
+                    fontSize: 12,
 
-color:condition.color,
+                    color: condition.color,
 
-fontWeight:700
+                    fontWeight: 700
 
-}}
+                }}
 
->
+            >
 
-{open?
+                {open ?
 
-"Hide"
+                    "Hide"
 
-:
+                    :
 
-"Show"
+                    "Show"
 
-}
+                }
 
-details
+                details
 
-</button>
+            </button>
 
 
-{open &&(
+            {open && (
 
-<div style={{fontSize:12,marginTop:8}}>
+                <div style={{ fontSize: 12, marginTop: 8 }}>
 
-Signals analysing safely.
+                    Signals analysing safely.
 
-</div>
+                </div>
 
-)}
+            )}
 
-</div>
+        </div>
 
-)
+    )
 
 }
 
@@ -173,103 +175,103 @@ Signals analysing safely.
 
 export default function BehaviourInsightPanel({
 
-scores,
+    scores,
 
-latched
+    latched
 
-}){
+}) {
 
-/* HARD SAFETY */
+    /* HARD SAFETY */
 
-const safeScores=
+    const safeScores =
 
-scores ??
+        scores ??
 
-{}
+        {}
 
-const safeLatched=
+    const safeLatched =
 
-latched ??
+        latched ??
 
-{}
-
-
-/* READY CHECK */
-
-const ready=
-
-Object.keys(safeScores).length>0
+        {}
 
 
-return(
+    /* READY CHECK */
 
-<div>
+    const ready =
 
-<h3>
-
-🤖 AI Disability Detection
-
-</h3>
+        Object.keys(safeScores).length > 0
 
 
-{!ready?
+    return (
 
-(
+        <div>
 
-<p style={{color:"#888"}}>
+            <h3>
 
-AI warming up...
+                <FontAwesomeIcon icon={faRobot} style={{ marginRight: 6 }} /> AI Disability Detection
 
-</p>
+            </h3>
 
-)
 
-:
+            {!ready ?
 
-(
+                (
 
-<div
+                    <p style={{ color: "#888" }}>
 
-style={{
+                        AI warming up...
 
-display:"grid",
+                    </p>
 
-gap:12
+                )
 
-}}
+                :
 
->
+                (
 
-{
+                    <div
 
-CONDITIONS.map(c=>(
+                        style={{
 
-<Card
+                            display: "grid",
 
-key={c.key}
+                            gap: 12
 
-condition={c}
+                        }}
 
-/* SAFE ACCESS */
+                    >
 
-data={safeScores?.[c.key] ?? {}}
+                        {
 
-latched={safeLatched}
+                            CONDITIONS.map(c => (
 
-/>
+                                <Card
 
-))
+                                    key={c.key}
 
-}
+                                    condition={c}
 
-</div>
+                                    /* SAFE ACCESS */
 
-)
+                                    data={safeScores?.[c.key] ?? {}}
 
-}
+                                    latched={safeLatched}
 
-</div>
+                                />
 
-)
+                            ))
+
+                        }
+
+                    </div>
+
+                )
+
+            }
+
+        </div>
+
+    )
 
 }

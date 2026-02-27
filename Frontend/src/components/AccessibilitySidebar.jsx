@@ -17,6 +17,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import useBehaviourAI from "../hooks/useBehaviourAI";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRobot, faBullseye, faBookOpen, faMouse, faFaceFrown, faMoon, faCircle, faBrain, faVolumeHigh, faGear, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 /* ── Toast Queue ─────────────────────────────────────────────── */
 function ToastStack({ toasts, onDismiss }) {
@@ -84,7 +86,7 @@ function AIBadge({ status, active, scores }) {
   return (
     <div className="mb-5 p-4 rounded-2xl bg-white/[0.03] border border-white/5">
       <p className="text-[10px] font-black tracking-[0.2em] uppercase text-white/30 mb-2">
-        🤖 AI Behaviour Engine
+        <FontAwesomeIcon icon={faRobot} className="mr-1" /> AI Behaviour Engine
       </p>
       <div className={`flex items-center gap-2 text-xs font-bold ${active ? "text-emerald-400" : "text-white/40"}`}>
         <span
@@ -258,18 +260,18 @@ export default function AccessibilitySidebar() {
 
     if (condition === "adhd") {
       setSetting("adhd", true);
-      showToast("🎯", "ADHD Focus Mode activated", pct, "#1e3a8a", "#2563eb");
+      showToast(<FontAwesomeIcon icon={faBullseye} />, "ADHD Focus Mode activated", pct, "#1e3a8a", "#2563eb");
     }
     if (condition === "dyslexia") {
       setSetting("dyslexia", true);
-      showToast("📖", "Dyslexia Font Mode activated", pct, "#064e3b", "#047857");
+      showToast(<FontAwesomeIcon icon={faBookOpen} />, "Dyslexia Font Mode activated", pct, "#064e3b", "#047857");
     }
     if (condition === "motor") {
       setSetting("motor", true);
-      showToast("🖱️", "Motor Assist activated", pct, "#7c2d12", "#c2410c");
+      showToast(<FontAwesomeIcon icon={faMouse} />, "Motor Assist activated", pct, "#7c2d12", "#c2410c");
     }
     if (condition === "anxiety") {
-      showToast("😟", "Anxiety Support Mode suggested", pct, "#92400e", "#f59e0b");
+      showToast(<FontAwesomeIcon icon={faFaceFrown} />, "Anxiety Support Mode suggested", pct, "#92400e", "#f59e0b");
     }
 
     setAiActive(true);
@@ -338,7 +340,7 @@ export default function AccessibilitySidebar() {
                     hover:pr-5 transition-all duration-300
                     flex flex-col items-center gap-1"
       >
-        <span className="text-lg">⚙</span>
+        <span className="text-lg"><FontAwesomeIcon icon={faGear} /></span>
         <span className="text-[9px] font-black tracking-wider [writing-mode:vertical-rl] rotate-180 opacity-60">
           A11Y
         </span>
@@ -377,7 +379,7 @@ export default function AccessibilitySidebar() {
             className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 hover:text-white
                         flex items-center justify-center transition-all text-sm"
           >
-            ✕
+            <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
 
@@ -392,22 +394,22 @@ export default function AccessibilitySidebar() {
             Visual
           </p>
 
-          <ToolRow icon="📖" label="Dyslexia Font" checked={!!settings.dyslexia} onChange={v => setSetting("dyslexia", v)} />
-          <ToolRow icon="🌗" label="High Contrast" checked={!!settings.contrast} onChange={v => setSetting("contrast", v)} />
-          <ToolRow icon="🌙" label="Dark Mode" checked={!!settings.dark} onChange={v => setSetting("dark", v)} />
-          <ToolRow icon="🟡" label="Colour Overlay" checked={!!settings.overlay} onChange={v => setSetting("overlay", v)} />
+          <ToolRow icon={<FontAwesomeIcon icon={faBookOpen} />} label="Dyslexia Font" checked={!!settings.dyslexia} onChange={v => setSetting("dyslexia", v)} />
+          <ToolRow icon={<FontAwesomeIcon icon={faMoon} />} label="High Contrast" checked={!!settings.contrast} onChange={v => setSetting("contrast", v)} />
+          <ToolRow icon={<FontAwesomeIcon icon={faMoon} />} label="Dark Mode" checked={!!settings.dark} onChange={v => setSetting("dark", v)} />
+          <ToolRow icon={<FontAwesomeIcon icon={faCircle} style={{ color: '#eab308' }} />} label="Colour Overlay" checked={!!settings.overlay} onChange={v => setSetting("overlay", v)} />
 
           <p className="text-[9px] font-black tracking-[0.25em] uppercase text-white/20 px-1 pb-1 pt-4">
             Focus & Motor
           </p>
 
-          <ToolRow icon="🧠" label="ADHD Focus" checked={!!settings.adhd} onChange={v => setSetting("adhd", v)} />
-          <ToolRow icon="🖱️" label="Motor Assist" checked={!!settings.motor} onChange={v => setSetting("motor", v)} />
+          <ToolRow icon={<FontAwesomeIcon icon={faBrain} />} label="ADHD Focus" checked={!!settings.adhd} onChange={v => setSetting("adhd", v)} />
+          <ToolRow icon={<FontAwesomeIcon icon={faMouse} />} label="Motor Assist" checked={!!settings.motor} onChange={v => setSetting("motor", v)} />
 
           {/* Narrator */}
           <div className="flex items-center justify-between px-4 py-3.5 rounded-2xl mb-2.5 bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all">
             <span className="flex items-center gap-3 text-sm font-semibold text-white/80">
-              <span className="text-lg">🔊</span>
+              <span className="text-lg"><FontAwesomeIcon icon={faVolumeHigh} /></span>
               Narrator
             </span>
             <button

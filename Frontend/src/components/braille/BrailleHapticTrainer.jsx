@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrophy } from '@fortawesome/free-solid-svg-icons';
 import { textToTokens } from '../../utils/BrailleEngine'; // Fixed casing
 
 export default function BrailleHapticTrainer({ text }) {
@@ -17,7 +19,7 @@ export default function BrailleHapticTrainer({ text }) {
   useEffect(() => {
     setCurrentIndex(0);
     setPressedKeys(new Set());
-  }, [text]); 
+  }, [text]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -44,7 +46,7 @@ export default function BrailleHapticTrainer({ text }) {
 
   if (!text) return <div className="text-center p-10 text-gray-400">Enter text to start training...</div>;
   if (currentIndex >= tokens.length && tokens.length > 0) return (
-    <div className="bg-green-50 text-green-700 p-10 rounded-2xl text-center border border-green-200 font-bold">🎉 Done!</div>
+    <div className="bg-green-50 text-green-700 p-10 rounded-2xl text-center border border-green-200 font-bold"><FontAwesomeIcon icon={faTrophy} className="mr-2" style={{ color: '#eab308' }} /> Done!</div>
   );
 
   return (

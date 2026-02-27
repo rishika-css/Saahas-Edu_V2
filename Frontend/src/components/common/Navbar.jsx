@@ -1,13 +1,15 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBraille, faHandPeace, faChartBar, faGamepad, faBrain } from '@fortawesome/free-solid-svg-icons';
 
 const navLinks = [
-  { path: '/braille', label: 'Braille', icon: '⠿' },
-  { path: '/sign-language', label: 'Signs', icon: '🤟' },
-  { path: '/dashboard', label: 'Stats', icon: '📊' },
-  { path: '/games', label: 'Play', icon: '🎮' },
-  { path: '/mental-health', label: 'Wellness', icon: '🧠' },
+  { path: '/braille', label: 'Braille', icon: <FontAwesomeIcon icon={faBraille} /> },
+  { path: '/sign-language', label: 'Signs', icon: <FontAwesomeIcon icon={faHandPeace} /> },
+  { path: '/dashboard', label: 'Stats', icon: <FontAwesomeIcon icon={faChartBar} /> },
+  { path: '/games', label: 'Play', icon: <FontAwesomeIcon icon={faGamepad} /> },
+  { path: '/mental-health', label: 'Wellness', icon: <FontAwesomeIcon icon={faBrain} /> },
 ];
 
 export default function Navbar() {
@@ -23,7 +25,7 @@ export default function Navbar() {
   return (
     <nav className="bg-black/80 backdrop-blur-md border-b border-white/10 sticky top-0 z-[100] transition-all duration-500">
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-20">
-        
+
         {/* Cyber Logo */}
         <Link to="/home" className="flex items-center gap-3 group">
           <div className="w-10 h-10 bg-[#D2FF00] flex items-center justify-center text-black font-black italic transition-transform group-hover:rotate-12 group-hover:scale-110 shadow-[0_0_20px_rgba(210,255,0,0.3)]">
@@ -50,7 +52,7 @@ export default function Navbar() {
                   {link.label}
                 </span>
                 {isActive && (
-                  <motion.div 
+                  <motion.div
                     layoutId="activeTab"
                     className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#D2FF00] shadow-[0_0_10px_#D2FF00]"
                   />
@@ -66,7 +68,7 @@ export default function Navbar() {
             <span className="text-[9px] font-black uppercase tracking-widest text-[#D2FF00] mb-1">Authenticated</span>
             <span className="text-xs font-bold text-white italic">{user?.name}</span>
           </div>
-          
+
           <button
             onClick={handleLogout}
             className="text-[9px] font-black uppercase tracking-[0.2em] border border-[#D2FF00]/40 text-[#D2FF00] px-5 py-2.5 hover:bg-[#D2FF00] hover:text-black transition-all"
@@ -83,8 +85,8 @@ export default function Navbar() {
             key={link.path}
             to={link.path}
             className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 border transition-all text-[9px] font-black uppercase tracking-widest
-              ${pathname === link.path 
-                ? 'bg-[#D2FF00] text-black border-[#D2FF00]' 
+              ${pathname === link.path
+                ? 'bg-[#D2FF00] text-black border-[#D2FF00]'
                 : 'bg-white/5 text-white/40 border-white/10'}`}
           >
             <span>{link.icon}</span>

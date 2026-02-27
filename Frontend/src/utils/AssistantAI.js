@@ -117,7 +117,7 @@ export function comfortSuggestion(text = "") {
         return {
             mood: "danger",
             message:
-                "You are not alone. Please consider speaking to a trusted person or counselor. Help is available ❤️."
+                "You are not alone. Please consider speaking to a trusted person or counselor. Help is available."
         };
     }
 
@@ -141,7 +141,7 @@ export function comfortSuggestion(text = "") {
         return {
             mood: "happy",
             message:
-                "That sounds wonderful! Hold on to moments like this 😊."
+                "That sounds wonderful! Hold on to moments like this."
         };
     }
 

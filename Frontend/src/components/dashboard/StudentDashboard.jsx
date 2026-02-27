@@ -5,6 +5,9 @@ import ActivityFeed from './ActivityFeed';
 import Card from '../common/Card';
 import { coursesAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBook, faFire, faBullseye, faClock, faClipboardList, faRocket, faInbox } from '@fortawesome/free-solid-svg-icons';
+
 export default function StudentDashboard({ user }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,18 +28,18 @@ export default function StudentDashboard({ user }) {
         <StatsWidget
           label="Courses Available"
           value={loading ? '...' : courses.length}
-          icon="📚"
+          icon={<FontAwesomeIcon icon={faBook} />}
           color="purple"
         />
-        <StatsWidget label="Current Streak" value="7d" icon="🔥" color="orange" />
-        <StatsWidget label="Quiz Score Avg" value="82%" icon="🎯" color="blue" />
-        <StatsWidget label="Hours Learned" value="34" icon="⏱️" color="green" />
+        <StatsWidget label="Current Streak" value="7d" icon={<FontAwesomeIcon icon={faFire} />} color="orange" />
+        <StatsWidget label="Quiz Score Avg" value="82%" icon={<FontAwesomeIcon icon={faBullseye} />} color="blue" />
+        <StatsWidget label="Hours Learned" value="34" icon={<FontAwesomeIcon icon={faClock} />} color="green" />
       </div>
       {/* Give Test Banner */}
       <Card>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <span style={{ fontSize: '2.5rem' }}>📝</span>
+            <span style={{ fontSize: '2.5rem' }}><FontAwesomeIcon icon={faClipboardList} /></span>
             <div>
               <h3 className="font-bold text-gray-800 text-lg">Adaptive Test Curator</h3>
               <p className="text-gray-500 text-sm">
@@ -60,7 +63,7 @@ export default function StudentDashboard({ user }) {
               transition: 'all 0.2s'
             }}
           >
-            Give Test 🚀
+            Give Test <FontAwesomeIcon icon={faRocket} className="ml-1" />
           </button>
         </div>
       </Card>
@@ -109,7 +112,7 @@ export default function StudentDashboard({ user }) {
 
           {!loading && !error && courses.length === 0 && (
             <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
-              <span className="text-4xl">📭</span>
+              <span className="text-4xl"><FontAwesomeIcon icon={faInbox} /></span>
               <p className="text-gray-400 text-sm mt-3 font-medium">No courses yet</p>
               <p className="text-gray-300 text-xs mt-1">
                 Ask your instructor to add some

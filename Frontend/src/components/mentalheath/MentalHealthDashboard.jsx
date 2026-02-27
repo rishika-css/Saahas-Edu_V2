@@ -5,6 +5,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useBehaviourAI from "../../hooks/useBehaviourAI";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faFaceSmileBeam, faFaceSmile, faFaceMeh, faFaceFrown, faFaceSadTear,
+  faSeedling, faRobot, faBullseye, faBookOpen, faComputerMouse,
+  faHeart, faWandMagicSparkles, faCircleCheck, faDumbbell,
+  faPenToSquare, faWind, faClipboardList, faStar,
+} from "@fortawesome/free-solid-svg-icons";
 
 import BehaviourInsightPanel from "./BehaviourInsightPanel";
 import BreathingExercise from "./BreathingExercise";
@@ -14,18 +21,18 @@ import "./MentalHealthDashboard.css";
 /* ── Static Data ───────────────────────────────────────────── */
 
 const MOODS = [
-  { emoji: "😄", label: "Great", value: 5 },
-  { emoji: "🙂", label: "Good", value: 4 },
-  { emoji: "😐", label: "Okay", value: 3 },
-  { emoji: "😔", label: "Low", value: 2 },
-  { emoji: "😢", label: "Bad", value: 1 },
+  { icon: faFaceSmileBeam, label: "Great", value: 5, color: "#22c55e" },
+  { icon: faFaceSmile, label: "Good", value: 4, color: "#84cc16" },
+  { icon: faFaceMeh, label: "Okay", value: 3, color: "#eab308" },
+  { icon: faFaceFrown, label: "Low", value: 2, color: "#f97316" },
+  { icon: faFaceSadTear, label: "Bad", value: 1, color: "#ef4444" },
 ];
 
 const QUOTES = [
   '"Your mental health is a priority. Your happiness is essential."',
-  '"It\'s okay to not be okay — what matters is that you don’t give up."',
+  '"It\'s okay to not be okay — what matters is that you don\'t give up."',
   '"Self-care is how you take your power back."',
-  '"You don’t have to control your thoughts. Just observe them."',
+  '"You don\'t have to control your thoughts. Just observe them."',
 ];
 
 /* ================================================================ */
@@ -67,13 +74,13 @@ export default function MentalHealthDashboard() {
   const detectedConditions = [];
 
   if (latched?.adhd)
-    detectedConditions.push({ key: "ADHD", icon: "🎯", color: "#3b82f6" });
+    detectedConditions.push({ key: "ADHD", icon: faBullseye, color: "#3b82f6" });
 
   if (latched?.dyslexia)
-    detectedConditions.push({ key: "Dyslexia", icon: "📖", color: "#22c55e" });
+    detectedConditions.push({ key: "Dyslexia", icon: faBookOpen, color: "#22c55e" });
 
   if (latched?.motor)
-    detectedConditions.push({ key: "Motor", icon: "🖱️", color: "#ef4444" });
+    detectedConditions.push({ key: "Motor", icon: faComputerMouse, color: "#ef4444" });
 
   const aiReady =
     !!scores && Object.keys(scores || {}).length > 0;
@@ -87,7 +94,7 @@ export default function MentalHealthDashboard() {
       <div className="mh-hero">
 
         <h2 className="text-2xl font-black">
-          🌿 Mental Health & Wellness
+          <FontAwesomeIcon icon={faSeedling} className="mr-2" /> Mental Health & Wellness
         </h2>
 
         <p className="text-white/70 text-sm">
@@ -118,8 +125,8 @@ export default function MentalHealthDashboard() {
             />
 
             {aiReady
-              ? "🤖 AI Monitoring Active"
-              : "🤖 AI Engine Warming Up"}
+              ? <><FontAwesomeIcon icon={faRobot} className="mr-1" /> AI Monitoring Active</>
+              : <><FontAwesomeIcon icon={faRobot} className="mr-1" /> AI Engine Warming Up</>}
           </div>
         </div>
       </div>
@@ -141,7 +148,7 @@ export default function MentalHealthDashboard() {
         <div className="mh-glass p-6">
 
           <h3 className="mh-section-title mb-4">
-            💛 Daily Mood Check-in
+            <FontAwesomeIcon icon={faHeart} style={{ color: "#facc15" }} className="mr-2" /> Daily Mood Check-in
           </h3>
 
           <div className="flex justify-center gap-3 flex-wrap">
@@ -160,7 +167,7 @@ export default function MentalHealthDashboard() {
                   }`}
               >
                 <span className="text-3xl">
-                  {m.emoji}
+                  <FontAwesomeIcon icon={m.icon} style={{ color: m.color }} />
                 </span>
 
                 <span className="text-xs">
@@ -178,7 +185,7 @@ export default function MentalHealthDashboard() {
                 onClick={handleMoodSubmit}
                 className="px-6 py-2 rounded-xl bg-purple-500 text-white font-bold"
               >
-                Log Mood ✨
+                Log Mood <FontAwesomeIcon icon={faWandMagicSparkles} className="ml-1" />
               </button>
 
             </div>
@@ -188,12 +195,12 @@ export default function MentalHealthDashboard() {
 
             <div className="mt-4 text-center text-green-600 font-bold text-sm">
 
-              ✅ Mood logged! Keep it up 💪
+              <FontAwesomeIcon icon={faCircleCheck} className="mr-1" /> Mood logged! Keep it up <FontAwesomeIcon icon={faDumbbell} className="ml-1" />
 
             </div>
           )}
 
-          {/* ⭐ JOURNAL SUPPORT BUTTON */}
+          {/* JOURNAL SUPPORT BUTTON */}
 
           <div className="mt-6 text-center">
 
@@ -203,7 +210,7 @@ export default function MentalHealthDashboard() {
               bg-gradient-to-r from-pink-500 to-purple-600
               shadow-lg hover:scale-105 transition"
             >
-              ✍️ Mental Health Support Journal
+              <FontAwesomeIcon icon={faPenToSquare} className="mr-2" /> Mental Health Support Journal
             </button>
 
           </div>
@@ -216,7 +223,7 @@ export default function MentalHealthDashboard() {
 
           <h3 className="mh-section-title mb-4">
 
-            🌬️ Breathing Exercise
+            <FontAwesomeIcon icon={faWind} className="mr-2" /> Breathing Exercise
 
           </h3>
 
@@ -234,7 +241,7 @@ export default function MentalHealthDashboard() {
 
           <h3 className="mh-section-title mb-4">
 
-            📋 Your Accessibility Profile
+            <FontAwesomeIcon icon={faClipboardList} className="mr-2" /> Your Accessibility Profile
 
           </h3>
 
@@ -248,7 +255,7 @@ export default function MentalHealthDashboard() {
               >
 
                 <span className="text-xl">
-                  {c.icon}
+                  <FontAwesomeIcon icon={c.icon} style={{ color: c.color }} />
                 </span>
 
                 <div>
@@ -281,7 +288,7 @@ export default function MentalHealthDashboard() {
 
       <div className="text-center py-4 text-xs text-gray-400">
 
-        🌟 Remember: It's okay to ask for help. You're not alone.
+        <FontAwesomeIcon icon={faStar} className="mr-1" /> Remember: It's okay to ask for help. You're not alone.
 
       </div>
 

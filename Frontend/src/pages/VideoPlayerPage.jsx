@@ -6,7 +6,7 @@ import TranscriptPanel from "../components/courses/TranscriptPanel";
 import NextVideoSidebar from "../components/courses/NextVideoSidebar";
 import { COURSES, SUBJECTS } from "../data/CourseData";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFilm, faFileAlt, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faFilm, faFileAlt, faInfoCircle, faCircle, faBraille, faHandPeace, faFileLines, faVolumeHigh, faPalette } from '@fortawesome/free-solid-svg-icons';
 
 export default function VideoPlayerPage() {
   const { subject, videoId } = useParams();
@@ -275,7 +275,7 @@ export default function VideoPlayerPage() {
                           : "bg-transparent border-white/10 text-white/40 hover:text-white"
                           }`}
                       >
-                        {isLiveEnabled ? "🔴 Live Gen On" : "Enable Live Gen"}
+                        {isLiveEnabled ? <><FontAwesomeIcon icon={faCircle} style={{ color: '#ef4444' }} /> Live Gen On</> : "Enable Live Gen"}
                       </button>
                     </div>
                   </div>
@@ -313,9 +313,15 @@ export default function VideoPlayerPage() {
                   <div>
                     <p className="text-white/30 text-xs uppercase tracking-widest font-black mb-3">Accessibility</p>
                     <div className="flex flex-wrap gap-2">
-                      {["⠿ Braille Ready", "🤟 Sign Language", "📝 Transcript", "🔊 Audio Support", "🎨 High Contrast"].map((f) => (
-                        <span key={f} className="bg-white/5 border border-white/8 text-white/50 text-xs px-3 py-1.5 rounded-full font-bold">
-                          {f}
+                      {[
+                        { icon: faBraille, label: "Braille Ready" },
+                        { icon: faHandPeace, label: "Sign Language" },
+                        { icon: faFileLines, label: "Transcript" },
+                        { icon: faVolumeHigh, label: "Audio Support" },
+                        { icon: faPalette, label: "High Contrast" },
+                      ].map((f) => (
+                        <span key={f.label} className="bg-white/5 border border-white/8 text-white/50 text-xs px-3 py-1.5 rounded-full font-bold">
+                          <FontAwesomeIcon icon={f.icon} className="mr-1" /> {f.label}
                         </span>
                       ))}
                     </div>

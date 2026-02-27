@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEye, faKeyboard, faPenToSquare, faVolumeHigh, faVolumeXmark, faBookOpen, faRocket, faTrophy, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import {
   textToTokens,
   dotsToLetter,
@@ -11,7 +13,7 @@ import {
 //  CONSTANTS
 // ─────────────────────────────────────────────────────────────
 const ALLOWED_KEYS = ['f', 'd', 's', 'j', 'k', 'l'];
-const KEY_TO_DOT   = { f: 1, d: 2, s: 3, j: 4, k: 5, l: 6 };
+const KEY_TO_DOT = { f: 1, d: 2, s: 3, j: 4, k: 5, l: 6 };
 
 // ─────────────────────────────────────────────────────────────
 //  AUDIO HOOK
@@ -23,31 +25,31 @@ function useAudio(enabled) {
     if (!enabled) return;
     if (!ctxRef.current)
       ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
-    
-    const osc  = ctxRef.current.createOscillator();
+
+    const osc = ctxRef.current.createOscillator();
     const gain = ctxRef.current.createGain();
-    
+
     osc.frequency.value = freq;
     osc.connect(gain);
     gain.connect(ctxRef.current.destination);
-    
+
     osc.start();
-    
+
     // Fixed empty catch block with a warning log for better debugging
-    setTimeout(() => { 
-      try { 
-        osc.stop(); 
+    setTimeout(() => {
+      try {
+        osc.stop();
       } catch (error) {
         console.warn("WebAudio Oscillator stop failed:", error);
-      } 
+      }
     }, ms);
   }, [enabled]);
 
   return useMemo(() => ({
-    correct : () => play(700, 100),
-    wrong   : () => play(200, 300),
-    commit  : () => play(520, 160),
-    space   : () => play(400, 100),
+    correct: () => play(700, 100),
+    wrong: () => play(200, 300),
+    commit: () => play(520, 160),
+    space: () => play(400, 100),
   }), [play]);
 }
 
@@ -59,15 +61,15 @@ function BrailleCell({ token, pressedKeys = new Set() }) {
     token.display.length > 1 ||
     (token.dots && !brailleLetters[token.display.toLowerCase()]);
 
-  const leftKeys  = ['f', 'd', 's'];
+  const leftKeys = ['f', 'd', 's'];
   const rightKeys = ['j', 'k', 'l'];
 
   const dotClass = (key) => {
-    const filled  = token.dots?.includes(key);
+    const filled = token.dots?.includes(key);
     const pressed = pressedKeys.has(key);
-    if (filled && pressed)  return 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]';
+    if (filled && pressed) return 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]';
     if (!filled && pressed) return 'bg-red-400';
-    if (filled)             return 'bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.35)]';
+    if (filled) return 'bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.35)]';
     return 'bg-gray-200';
   };
 
@@ -105,14 +107,14 @@ function KeyPad({ activeKeys = new Set(), wrongKeys = new Set() }) {
     <div className="flex flex-col gap-2">
       {keys.map(k => {
         const isActive = activeKeys.has(k);
-        const isWrong  = wrongKeys.has(k);
+        const isWrong = wrongKeys.has(k);
         return (
           <div
             key={k}
             className={`w-14 h-14 flex flex-col items-center justify-center rounded-2xl border-b-4 font-black text-base transition-all duration-150
-              ${isWrong  ? 'bg-red-500   border-red-700   text-white scale-95' :
+              ${isWrong ? 'bg-red-500   border-red-700   text-white scale-95' :
                 isActive ? 'bg-purple-600 border-purple-800 text-white scale-95' :
-                           'bg-white      border-gray-200   text-gray-400'}`}
+                  'bg-white      border-gray-200   text-gray-400'}`}
           >
             <span className="text-lg">{k.toUpperCase()}</span>
             <span className="text-[9px] opacity-60 font-normal">Dot {KEY_TO_DOT[k]}</span>
@@ -126,7 +128,7 @@ function KeyPad({ activeKeys = new Set(), wrongKeys = new Set() }) {
     <div className="flex gap-4 justify-center items-start">
       {col(['f', 'd', 's'])}
       <div className="flex flex-col gap-2 items-center justify-center h-full pt-4">
-        {[0,1,2].map(i => <div key={i} className="w-0.5 h-8 bg-gray-200 rounded" />)}
+        {[0, 1, 2].map(i => <div key={i} className="w-0.5 h-8 bg-gray-200 rounded" />)}
       </div>
       {col(['j', 'k', 'l'])}
     </div>
@@ -146,7 +148,7 @@ function G2ReferenceTable() {
         onClick={() => setOpen(o => !o)}
         className="w-full flex items-center justify-between px-5 py-3 bg-purple-50 hover:bg-purple-100 border border-purple-100 rounded-2xl text-sm font-black text-purple-700 transition-all"
       >
-        <span>📖 UEB Grade 2 Reference</span>
+        <span><FontAwesomeIcon icon={faBookOpen} className="mr-2" />UEB Grade 2 Reference</span>
         <span className="text-lg">{open ? '▲' : '▼'}</span>
       </button>
 
@@ -164,7 +166,7 @@ function G2ReferenceTable() {
             <tbody>
               {shown.map((c, i) => {
                 const dotNums = c.dots.map(k => KEY_TO_DOT[k]).join('-');
-                const keys    = c.dots.map(k => k.toUpperCase()).join(' ');
+                const keys = c.dots.map(k => k.toUpperCase()).join(' ');
                 return (
                   <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-2.5 font-bold text-gray-800">{c.text}</td>
@@ -172,7 +174,7 @@ function G2ReferenceTable() {
                     <td className="px-4 py-2.5 font-mono font-black text-purple-600 text-xs tracking-widest">{keys}</td>
                     <td className="px-4 py-2.5">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase
-                        ${c.type === 'part'  ? 'bg-blue-50 text-blue-600' :
+                        ${c.type === 'part' ? 'bg-blue-50 text-blue-600' :
                           c.type === 'short' ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
                         {c.type}
                       </span>
@@ -192,8 +194,8 @@ function G2ReferenceTable() {
 //  MODE: READING
 // ─────────────────────────────────────────────────────────────
 function ReadingMode({ snd }) {
-  const [inputText, setInputText]   = useState('');
-  const [tokens, setTokens]         = useState([]);
+  const [inputText, setInputText] = useState('');
+  const [tokens, setTokens] = useState([]);
   const [pressedKeys, setPressedKeys] = useState(new Set());
 
   const convert = () => setTokens(textToTokens(inputText));
@@ -209,7 +211,7 @@ function ReadingMode({ snd }) {
         setTimeout(() => setPressedKeys(p => { const n = new Set(p); n.delete(k); return n; }), 200);
     };
     window.addEventListener('keydown', down);
-    window.addEventListener('keyup',   up);
+    window.addEventListener('keyup', up);
     return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
   }, []);
 
@@ -260,14 +262,14 @@ function ReadingMode({ snd }) {
 // ─────────────────────────────────────────────────────────────
 function TypingMode({ snd }) {
   const [inputText, setInputText] = useState('');
-  const [tokens, setTokens]       = useState([]);
-  const [started, setStarted]     = useState(false);
+  const [tokens, setTokens] = useState([]);
+  const [started, setStarted] = useState(false);
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [pressedKeys, setPressedKeys] = useState(new Set());
-  const [wrongKeys, setWrongKeys]     = useState(new Set());
-  const [stats, setStats]             = useState({ correct: 0, wrong: 0, completed: 0 });
-  const [done, setDone]               = useState(false);
+  const [wrongKeys, setWrongKeys] = useState(new Set());
+  const [stats, setStats] = useState({ correct: 0, wrong: 0, completed: 0 });
+  const [done, setDone] = useState(false);
 
   const startTraining = () => {
     const toks = textToTokens(inputText).filter(t => t.dots);
@@ -340,7 +342,7 @@ function TypingMode({ snd }) {
             disabled={!inputText.trim()}
             className="w-full mt-4 bg-green-600 text-white py-4 rounded-2xl font-black text-base hover:bg-green-700 transition-all hover:shadow-lg active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            🚀 START TRAINING
+            <FontAwesomeIcon icon={faRocket} className="mr-2" /> START TRAINING
           </button>
         </div>
         <G2ReferenceTable />
@@ -354,7 +356,7 @@ function TypingMode({ snd }) {
       : 100;
     return (
       <div className="bg-white p-10 rounded-3xl border border-gray-100 shadow-sm text-center space-y-6">
-        <div className="text-6xl">🎉</div>
+        <div className="text-6xl"><FontAwesomeIcon icon={faTrophy} style={{ color: '#eab308' }} /></div>
         <h3 className="text-2xl font-black text-gray-800">Training Complete!</h3>
         <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
           <div className="bg-purple-50 rounded-2xl p-4">
@@ -438,19 +440,19 @@ function TypingMode({ snd }) {
 //  MODE: BRAILLE INPUT
 // ─────────────────────────────────────────────────────────────
 function BrailleInputMode({ snd }) {
-  const [active, setActive]           = useState(false);
+  const [active, setActive] = useState(false);
   const [currentChord, setCurrentChord] = useState(new Set());
-  const [typedText, setTypedText]     = useState('');
+  const [typedText, setTypedText] = useState('');
   const [tokenHistory, setTokenHistory] = useState([]);
 
-  const chordKey    = [...currentChord].sort().join('');
+  const chordKey = [...currentChord].sort().join('');
   const chordLetter = dotsToLetter[chordKey];
-  const chordWord   = chordToContraction[chordKey];
-  const chordDots   = [...currentChord].sort().map(k => KEY_TO_DOT[k]).join(' · ');
+  const chordWord = chordToContraction[chordKey];
+  const chordDots = [...currentChord].sort().map(k => KEY_TO_DOT[k]).join(' · ');
 
   const commitChord = useCallback(() => {
     if (currentChord.size === 0) return;
-    const key    = [...currentChord].sort().join('');
+    const key = [...currentChord].sort().join('');
     const result = chordToContraction[key] || dotsToLetter[key];
     setCurrentChord(new Set());
 
@@ -505,16 +507,16 @@ function BrailleInputMode({ snd }) {
   }, [active, commitChord, snd]);
 
   const chordMatchStyle =
-    chordWord   ? 'bg-amber-50 border-amber-300 text-amber-700' :
-    chordLetter ? 'bg-green-50 border-green-300 text-green-700' :
-    currentChord.size > 0 ? 'bg-red-50 border-red-200 text-red-500' :
-    'bg-gray-50 border-gray-100 text-gray-400';
+    chordWord ? 'bg-amber-50 border-amber-300 text-amber-700' :
+      chordLetter ? 'bg-green-50 border-green-300 text-green-700' :
+        currentChord.size > 0 ? 'bg-red-50 border-red-200 text-red-500' :
+          'bg-gray-50 border-gray-100 text-gray-400';
 
   const chordMatchText =
-    chordWord   ? `→ "${chordWord}" (Grade 2)` :
-    chordLetter ? `→ "${chordLetter}"` :
-    currentChord.size > 0 ? '→ unknown pattern' :
-    'Hold dot-keys, then press Enter ↵';
+    chordWord ? `→ "${chordWord}" (Grade 2)` :
+      chordLetter ? `→ "${chordLetter}"` :
+        currentChord.size > 0 ? '→ unknown pattern' :
+          'Hold dot-keys, then press Enter ↵';
 
   return (
     <div className="space-y-5">
@@ -547,7 +549,7 @@ function BrailleInputMode({ snd }) {
           onClick={() => { setTypedText(''); setTokenHistory([]); setCurrentChord(new Set()); }}
           className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-2xl font-black hover:bg-red-50 hover:text-red-500 transition-all"
         >
-          🗑 Clear
+          <FontAwesomeIcon icon={faTrashCan} className="mr-1" /> Clear
         </button>
       </div>
 
@@ -566,13 +568,13 @@ function BrailleInputMode({ snd }) {
 //  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 const MODES = [
-  { id: 'reading',       emoji: '👁',  label: 'Reading' },
-  { id: 'typing',        emoji: '⌨',  label: 'Typing'  },
-  { id: 'braille-input', emoji: '✍',  label: 'Input'   },
+  { id: 'reading', icon: faEye, label: 'Reading' },
+  { id: 'typing', icon: faKeyboard, label: 'Typing' },
+  { id: 'braille-input', icon: faPenToSquare, label: 'Input' },
 ];
 
 export default function BrailleTrainer() {
-  const [mode, setMode]           = useState('reading');
+  const [mode, setMode] = useState('reading');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const snd = useAudio(soundEnabled);
 
@@ -590,7 +592,7 @@ export default function BrailleTrainer() {
           className={`self-start sm:self-auto px-4 py-2 rounded-xl border-2 text-sm font-black transition-all
             ${soundEnabled ? 'border-purple-200 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-400 bg-white'}`}
         >
-          {soundEnabled ? '🔊 Sound On' : '🔇 Sound Off'}
+          {soundEnabled ? <><FontAwesomeIcon icon={faVolumeHigh} className="mr-1" /> Sound On</> : <><FontAwesomeIcon icon={faVolumeXmark} className="mr-1" /> Sound Off</>}
         </button>
       </div>
 
@@ -602,14 +604,14 @@ export default function BrailleTrainer() {
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all
               ${mode === m.id ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-700'}`}
           >
-            <span>{m.emoji}</span>
+            <span><FontAwesomeIcon icon={m.icon} /></span>
             <span className="hidden sm:inline">{m.label}</span>
           </button>
         ))}
       </div>
 
-      {mode === 'reading'       && <ReadingMode      snd={snd} />}
-      {mode === 'typing'        && <TypingMode        snd={snd} />}
+      {mode === 'reading' && <ReadingMode snd={snd} />}
+      {mode === 'typing' && <TypingMode snd={snd} />}
       {mode === 'braille-input' && <BrailleInputMode snd={snd} />}
     </div>
   );

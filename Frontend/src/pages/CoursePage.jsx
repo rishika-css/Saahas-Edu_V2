@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faStar } from '@fortawesome/free-solid-svg-icons';
 import Navbar from "../components/common/Navbar";
 import { COURSES, SUBJECTS } from "../data/CourseData";
 
@@ -162,7 +163,7 @@ export default function CoursesPage() {
 
         {/* Header */}
         <div className="mb-10 animate-fadeUp">
-          <p className="text-white/30 text-xs font-black tracking-[0.3em] uppercase mb-3">✦ Saahas Learning ✦</p>
+          <p className="text-white/30 text-xs font-black tracking-[0.3em] uppercase mb-3"><FontAwesomeIcon icon={faStar} className="mr-1" style={{ fontSize: '0.6em' }} /> Saahas Learning <FontAwesomeIcon icon={faStar} className="ml-1" style={{ fontSize: '0.6em' }} /></p>
           <h1 className="font-display text-5xl md:text-6xl font-black text-white leading-tight mb-3">
             Explore <span style={{ WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", background: `linear-gradient(135deg, ${subj.color}, ${subj.accent})`, backgroundClip: "text" }}>
               {subj.title}
