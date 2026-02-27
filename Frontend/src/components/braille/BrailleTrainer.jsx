@@ -23,13 +23,24 @@ function useAudio(enabled) {
     if (!enabled) return;
     if (!ctxRef.current)
       ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    
     const osc  = ctxRef.current.createOscillator();
     const gain = ctxRef.current.createGain();
+    
     osc.frequency.value = freq;
     osc.connect(gain);
     gain.connect(ctxRef.current.destination);
+    
     osc.start();
-    setTimeout(() => { try { osc.stop(); } catch (_) {} }, ms);
+    
+    // Fixed empty catch block with a warning log for better debugging
+    setTimeout(() => { 
+      try { 
+        osc.stop(); 
+      } catch (error) {
+        console.warn("WebAudio Oscillator stop failed:", error);
+      } 
+    }, ms);
   }, [enabled]);
 
   return useMemo(() => ({
@@ -67,7 +78,6 @@ function BrailleCell({ token, pressedKeys = new Set() }) {
           G2
         </span>
       )}
-      {/* 2-col × 3-row dot grid */}
       <div className="flex gap-3 mb-2.5">
         <div className="flex flex-col gap-2">
           {leftKeys.map(k => (
@@ -88,7 +98,7 @@ function BrailleCell({ token, pressedKeys = new Set() }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  KEY PAD VISUAL (shared across Typing + Braille Input)
+//  KEY PAD VISUAL
 // ─────────────────────────────────────────────────────────────
 function KeyPad({ activeKeys = new Set(), wrongKeys = new Set() }) {
   const col = (keys) => (
@@ -114,13 +124,10 @@ function KeyPad({ activeKeys = new Set(), wrongKeys = new Set() }) {
 
   return (
     <div className="flex gap-4 justify-center items-start">
-      {/* Left: F D S = Dots 1 2 3 */}
       {col(['f', 'd', 's'])}
-      {/* Visual divider */}
       <div className="flex flex-col gap-2 items-center justify-center h-full pt-4">
         {[0,1,2].map(i => <div key={i} className="w-0.5 h-8 bg-gray-200 rounded" />)}
       </div>
-      {/* Right: J K L = Dots 4 5 6 */}
       {col(['j', 'k', 'l'])}
     </div>
   );
@@ -191,7 +198,6 @@ function ReadingMode({ snd }) {
 
   const convert = () => setTokens(textToTokens(inputText));
 
-  // Neutral key highlight (no right/wrong in reading mode)
   useEffect(() => {
     const down = (e) => {
       const k = e.key.toLowerCase();
@@ -209,7 +215,6 @@ function ReadingMode({ snd }) {
 
   return (
     <div className="space-y-6">
-      {/* Input card */}
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
         <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
           Enter text to convert
@@ -229,7 +234,6 @@ function ReadingMode({ snd }) {
         </button>
       </div>
 
-      {/* Dot-cell output */}
       {tokens.length > 0 ? (
         <>
           <p className="text-xs text-gray-400 text-center font-bold uppercase tracking-widest">
@@ -252,7 +256,7 @@ function ReadingMode({ snd }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  MODE: TYPING (guided training)
+//  MODE: TYPING
 // ─────────────────────────────────────────────────────────────
 function TypingMode({ snd }) {
   const [inputText, setInputText] = useState('');
@@ -300,7 +304,6 @@ function TypingMode({ snd }) {
         setStats(s => ({ ...s, wrong: s.wrong + 1 }));
       }
 
-      // All 6 keys pressed → advance
       if (nextPressed.size === 6) {
         setStats(s => ({ ...s, completed: s.completed + 1 }));
         setTimeout(() => {
@@ -319,7 +322,6 @@ function TypingMode({ snd }) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [started, done, pressedKeys, requiredDots, currentIdx, tokens, snd]);
 
-  // ── Not started yet ──
   if (!started) {
     return (
       <div className="space-y-6">
@@ -346,7 +348,6 @@ function TypingMode({ snd }) {
     );
   }
 
-  // ── Done screen ──
   if (done) {
     const accuracy = stats.correct + stats.wrong > 0
       ? Math.round((stats.correct / (stats.correct + stats.wrong)) * 100)
@@ -381,12 +382,10 @@ function TypingMode({ snd }) {
     );
   }
 
-  // ── Active training ──
   const dotNums = currentToken.dots.map(k => KEY_TO_DOT[k]).join('-');
 
   return (
     <div className="space-y-5">
-      {/* Progress bar */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
           <div
@@ -397,7 +396,6 @@ function TypingMode({ snd }) {
         <span className="text-xs font-black text-gray-400">{currentIdx}/{tokens.length}</span>
       </div>
 
-      {/* Stats row */}
       <div className="flex gap-3">
         <div className="flex-1 bg-green-50 rounded-2xl p-3 text-center">
           <div className="text-xl font-black text-green-600">{stats.correct}</div>
@@ -409,7 +407,6 @@ function TypingMode({ snd }) {
         </div>
       </div>
 
-      {/* Current character display */}
       <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm text-center space-y-4">
         {currentToken.display.length > 1 && (
           <span className="inline-block text-xs font-black bg-amber-100 text-amber-600 px-3 py-1 rounded-full uppercase tracking-tight">
@@ -422,14 +419,11 @@ function TypingMode({ snd }) {
         <p className="text-sm text-gray-400 font-bold">
           Dots required: <span className="text-purple-600 font-black">{dotNums}</span>
         </p>
-
-        {/* Live dot-cell preview */}
         <div className="flex justify-center">
           <BrailleCell token={currentToken} pressedKeys={pressedKeys} />
         </div>
       </div>
 
-      {/* Key pad */}
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center mb-4">
           Press all 6 keys — green = correct · red = not needed
@@ -441,7 +435,7 @@ function TypingMode({ snd }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  MODE: BRAILLE INPUT (chord-based free typing)
+//  MODE: BRAILLE INPUT
 // ─────────────────────────────────────────────────────────────
 function BrailleInputMode({ snd }) {
   const [active, setActive]           = useState(false);
@@ -449,7 +443,6 @@ function BrailleInputMode({ snd }) {
   const [typedText, setTypedText]     = useState('');
   const [tokenHistory, setTokenHistory] = useState([]);
 
-  // Derive live chord preview
   const chordKey    = [...currentChord].sort().join('');
   const chordLetter = dotsToLetter[chordKey];
   const chordWord   = chordToContraction[chordKey];
@@ -459,7 +452,6 @@ function BrailleInputMode({ snd }) {
     if (currentChord.size === 0) return;
     const key    = [...currentChord].sort().join('');
     const result = chordToContraction[key] || dotsToLetter[key];
-    const chord  = new Set(currentChord);
     setCurrentChord(new Set());
 
     if (result) {
@@ -526,7 +518,6 @@ function BrailleInputMode({ snd }) {
 
   return (
     <div className="space-y-5">
-      {/* Chord preview */}
       <div className={`rounded-2xl border-2 px-5 py-4 text-center font-black text-sm transition-all ${chordMatchStyle}`}>
         <div className="text-xs font-bold opacity-60 uppercase tracking-widest mb-1">
           {currentChord.size > 0 ? `Active dots: ${chordDots}` : 'Chord Preview'}
@@ -534,7 +525,6 @@ function BrailleInputMode({ snd }) {
         <div className="text-base">{chordMatchText}</div>
       </div>
 
-      {/* Output display */}
       <div className="min-h-[110px] p-6 bg-gray-900 text-purple-300 rounded-2xl font-mono text-2xl flex items-center border-[5px] border-gray-800 shadow-inner break-all">
         {typedText
           ? <span>{typedText}<span className="ml-1 inline-block w-1.5 h-8 bg-purple-400 animate-pulse align-middle" /></span>
@@ -542,12 +532,10 @@ function BrailleInputMode({ snd }) {
         }
       </div>
 
-      {/* Key pad */}
       <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
         <KeyPad activeKeys={currentChord} />
       </div>
 
-      {/* Controls */}
       <div className="flex gap-3">
         <button
           onClick={() => { setActive(true); setTypedText(''); setTokenHistory([]); setCurrentChord(new Set()); }}
@@ -563,14 +551,12 @@ function BrailleInputMode({ snd }) {
         </button>
       </div>
 
-      {/* Instructions */}
       <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-xs text-blue-700 font-bold space-y-1">
         <p>• Hold dot-keys (F D S / J K L) to build a chord</p>
         <p>• <kbd className="bg-white border border-blue-200 rounded px-1.5 py-0.5">Enter ↵</kbd> commits the letter or Grade 2 word</p>
         <p>• <kbd className="bg-white border border-blue-200 rounded px-1.5 py-0.5">Space</kbd> adds a word gap · <kbd className="bg-white border border-blue-200 rounded px-1.5 py-0.5">Backspace</kbd> deletes last token</p>
         <p>• Grade 2 chords (e.g. F+D+S+J+L = "and") output the full word</p>
       </div>
-
       <G2ReferenceTable />
     </div>
   );
@@ -594,8 +580,6 @@ export default function BrailleTrainer() {
 
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-8 min-h-screen font-sans selection:bg-purple-100">
-
-      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Braille Trainer</h1>
@@ -610,7 +594,6 @@ export default function BrailleTrainer() {
         </button>
       </div>
 
-      {/* ── Mode switcher ── */}
       <div className="flex bg-gray-100 p-1.5 rounded-2xl mb-8">
         {MODES.map(m => (
           <button
@@ -625,7 +608,6 @@ export default function BrailleTrainer() {
         ))}
       </div>
 
-      {/* ── Mode content ── */}
       {mode === 'reading'       && <ReadingMode      snd={snd} />}
       {mode === 'typing'        && <TypingMode        snd={snd} />}
       {mode === 'braille-input' && <BrailleInputMode snd={snd} />}
