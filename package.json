@@ -1,6 +1,7 @@
 {
   "name": "saahas",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "frontend": "cd Frontend && npm run dev",
     "backend": "cd backend && node server.js",

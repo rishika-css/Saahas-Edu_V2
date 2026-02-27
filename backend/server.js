@@ -1,7 +1,13 @@
+
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import dns from "node:dns";
+
+// Use Google public DNS to resolve MongoDB Atlas SRV records
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 
 import behaviorRoutes from "./routes/behavior.js";
 // router for test operations (start/answer/submit) – not to be confused with the
