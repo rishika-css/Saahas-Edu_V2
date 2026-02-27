@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/common/Navbar";
 import VideoPlayer from "../components/courses/VideoPlayer";
@@ -11,6 +11,84 @@ export default function VideoPlayerPage() {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(0);
   const [activeTab, setActiveTab] = useState("transcript"); // "transcript" | "about"
+
+  // Live Transcript State
+  const [liveTranscript, setLiveTranscript] = useState([]);
+  const [isLiveEnabled, setIsLiveEnabled] = useState(false);
+  const recognitionRef = useRef(null);
+  const currentTimeRef = useRef(0);
+
+  useEffect(() => {
+    currentTimeRef.current = currentTime;
+  }, [currentTime]);
+
+  useEffect(() => {
+    // Reset live transcript when video changes
+    setLiveTranscript([]);
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) { }
+    }
+  }, [videoId]);
+
+  // Initialize SpeechRecognition once
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn("Speech Recognition API not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      const current = event.resultIndex;
+      const transcriptText = event.results[current][0].transcript;
+
+      setLiveTranscript((prev) => [
+        ...prev,
+        { time: Math.floor(currentTimeRef.current), text: transcriptText.trim() }
+      ]);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error", event.error);
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const handleVideoPlay = () => {
+    if (isLiveEnabled && recognitionRef.current) {
+      try {
+        recognitionRef.current.start();
+      } catch (e) {
+        console.error("Failed to start speech recognition (it might already be running)", e);
+      }
+    }
+  };
+
+  const handleVideoPause = () => {
+    if (isLiveEnabled && recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore error if already stopped
+      }
+    }
+  };
+
+  const toggleLiveTranscription = () => {
+    setIsLiveEnabled((prev) => !prev);
+  };
 
   const subj = SUBJECTS[subject];
   const videos = COURSES[subject] || [];
@@ -80,6 +158,8 @@ export default function VideoPlayerPage() {
             <VideoPlayer
               src={video.videoUrl}
               onTimeUpdate={setCurrentTime}
+              onPlay={handleVideoPlay}
+              onPause={handleVideoPause}
               color={subj.color}
               accent={subj.accent}
             />
@@ -163,23 +243,38 @@ export default function VideoPlayerPage() {
                   style={{ borderColor: "rgba(255,255,255,0.06)" }}
                   className="bg-[#0a0f18] rounded-2xl border p-5"
                 >
-                  <div className="flex items-center gap-2 mb-4">
-                    <span
-                      style={{ background: `linear-gradient(135deg, ${subj.color}, ${subj.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-                      className="font-display font-black text-lg"
-                    >
-                      Live Transcript
-                    </span>
-                    <div
-                      style={{ background: subj.color }}
-                      className="w-2 h-2 rounded-full animate-pulse"
-                    />
-                    <span className="text-white/20 text-xs ml-auto">
-                      Auto-scrolls with video
-                    </span>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span
+                        style={{ background: `linear-gradient(135deg, ${subj.color}, ${subj.accent})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
+                        className="font-display font-black text-lg"
+                      >
+                        {isLiveEnabled ? "Live Hearing Transcript" : "Standard Transcript"}
+                      </span>
+                      {isLiveEnabled && (
+                        <div
+                          style={{ background: subj.color }}
+                          className="w-2 h-2 rounded-full animate-pulse"
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-white/20 text-xs hidden sm:inline">
+                        Auto-scrolls with video
+                      </span>
+                      <button
+                        onClick={toggleLiveTranscription}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-full transition-all border ${isLiveEnabled
+                            ? "bg-white/10 border-white/20 text-white"
+                            : "bg-transparent border-white/10 text-white/40 hover:text-white"
+                          }`}
+                      >
+                        {isLiveEnabled ? "🔴 Live Gen On" : "Enable Live Gen"}
+                      </button>
+                    </div>
                   </div>
                   <TranscriptPanel
-                    transcript={video.transcript}
+                    transcript={isLiveEnabled ? liveTranscript : video.transcript}
                     currentTime={currentTime}
                     color={subj.color}
                     accent={subj.accent}

@@ -1,14 +1,14 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/common/Navbar";
 import { COURSES, SUBJECTS } from "../data/CourseData";
 
 // ─── Level Badge ─────────────────────────────────────────────────────────────
 function LevelBadge({ level }) {
   const map = {
-    Beginner:     "bg-emerald-500/20 text-emerald-400",
+    Beginner: "bg-emerald-500/20 text-emerald-400",
     Intermediate: "bg-amber-500/20 text-amber-400",
-    Advanced:     "bg-rose-500/20 text-rose-400",
+    Advanced: "bg-rose-500/20 text-rose-400",
   };
   return (
     <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${map[level] || map.Beginner}`}>
@@ -123,10 +123,19 @@ function SubjectTab({ subj, active, onClick }) {
 
 // ─── CoursesPage ──────────────────────────────────────────────────────────────
 export default function CoursesPage() {
-  const [activeSubject, setActiveSubject] = useState("maths");
+  const location = useLocation();
+  const [activeSubject, setActiveSubject] = useState(location.state?.subject || "maths");
   const navigate = useNavigate();
+
+  // On state change in navigation, update active subject
+  useEffect(() => {
+    if (location.state?.subject) {
+      setActiveSubject(location.state.subject);
+    }
+  }, [location.state?.subject]);
+
   const subj = SUBJECTS[activeSubject];
-  const videos = COURSES[activeSubject];
+  const videos = COURSES[activeSubject] || [];
 
   const handleVideoClick = (video) => {
     navigate(`/courses/${video.subject}/${video.id}`);
