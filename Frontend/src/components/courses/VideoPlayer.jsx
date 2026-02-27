@@ -6,7 +6,7 @@ function formatTime(s) {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
-export default function VideoPlayer({ src, onTimeUpdate, color = "#06d6a0", accent = "#4cc9f0" }) {
+export default function VideoPlayer({ src, onTimeUpdate, onPlay, onPause, color = "#06d6a0", accent = "#4cc9f0" }) {
   const videoRef = useRef(null);
   const progressRef = useRef(null);
   const [playing, setPlaying] = useState(false);
@@ -106,7 +106,6 @@ export default function VideoPlayer({ src, onTimeUpdate, color = "#06d6a0", acce
       className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden group select-none"
       style={{ cursor: showControls ? "default" : "none" }}
     >
-      {/* Video */}
       <video
         ref={videoRef}
         src={src}
@@ -115,6 +114,8 @@ export default function VideoPlayer({ src, onTimeUpdate, color = "#06d6a0", acce
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => setPlaying(false)}
         onClick={togglePlay}
+        onPlay={onPlay}
+        onPause={onPause}
       />
 
       {/* No-source placeholder */}

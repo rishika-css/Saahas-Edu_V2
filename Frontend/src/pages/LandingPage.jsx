@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { motion, useSpring, useScroll, useTransform } from "framer-motion";
 
@@ -122,7 +123,7 @@ function ThreeHero() {
 }
 
 // ─── Course Card (Lando Style) ───────────────────────────────────────────
-function CourseCard({ emoji, title, color, accent, topics, delay }) {
+function CourseCard({ emoji, title, color, accent, topics, delay, onClick }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -146,7 +147,7 @@ function CourseCard({ emoji, title, color, accent, topics, delay }) {
           </div>
         ))}
       </div>
-      <button className="w-full py-4 bg-white text-black font-black uppercase text-[10px] tracking-[0.2em] hover:bg-[#D2FF00] transition-colors">
+      <button onClick={onClick} className="w-full py-4 bg-white text-black font-black uppercase text-[10px] tracking-[0.2em] hover:bg-[#D2FF00] transition-colors">
         Enter Module
       </button>
     </motion.div>
@@ -157,7 +158,8 @@ function CourseCard({ emoji, title, color, accent, topics, delay }) {
 export default function LandingPage() {
   const coursesRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
-  
+  const navigate = useNavigate();
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
@@ -165,15 +167,15 @@ export default function LandingPage() {
   }, []);
 
   const courses = [
-    { emoji: "📖", title: "English", color: "#ff6b6b", accent: "#D2FF00", topics: ["Reading", "Grammar", "Sign Language"] },
-    { emoji: "🔢", title: "Mathematics", color: "#06d6a0", accent: "#D2FF00", topics: ["Counting", "Geometry", "Visual Aids"] },
-    { emoji: "🔬", title: "Science", color: "#9b5de5", accent: "#D2FF00", topics: ["Living World", "Experiments", "Space"] },
+    { id: "english", emoji: "📖", title: "English", color: "#ff6b6b", accent: "#D2FF00", topics: ["Reading", "Grammar", "Sign Language"] },
+    { id: "maths", emoji: "🔢", title: "Mathematics", color: "#06d6a0", accent: "#D2FF00", topics: ["Counting", "Geometry", "Visual Aids"] },
+    { id: "science", emoji: "🔬", title: "Science", color: "#9b5de5", accent: "#D2FF00", topics: ["Living World", "Experiments", "Space"] },
   ];
 
   return (
     <div className="bg-[#050a14] min-h-screen text-white selection:bg-[#D2FF00] selection:text-black font-sans">
       <CustomCursor />
-      
+
       {/* Visual Texture Overlays */}
       <div className="fixed inset-0 pointer-events-none z-[1] opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       <div className="fixed inset-0 pointer-events-none z-[1] opacity-5" style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: '80px 80px' }} />
@@ -207,7 +209,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
         <ThreeHero />
-        
+
         <div className="relative z-10 text-center px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -232,7 +234,7 @@ export default function LandingPage() {
             transition={{ delay: 0.6 }}
             className="mt-10 text-white/50 text-xs md:text-sm font-bold uppercase tracking-[0.4em] max-w-2xl mx-auto leading-relaxed"
           >
-            A high-performance learning ecosystem built for accessibility. <br/>
+            A high-performance learning ecosystem built for accessibility. <br />
             No barriers. No limits. Just speed and courage.
           </motion.p>
         </div>
@@ -258,10 +260,10 @@ export default function LandingPage() {
               Every course is engineered with visual aids, audio feedback, and haptic-ready UI elements.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-1">
             {courses.map((c, i) => (
-              <CourseCard key={c.title} {...c} delay={i * 150} />
+              <CourseCard key={c.title} {...c} delay={i * 150} onClick={() => navigate('/courses', { state: { subject: c.id } })} />
             ))}
           </div>
         </div>
@@ -270,7 +272,7 @@ export default function LandingPage() {
       {/* Footer / CTA */}
       <section className="relative z-10 py-40 border-t border-white/5 bg-black">
         <div className="max-w-4xl mx-auto text-center px-10">
-          <motion.div 
+          <motion.div
             whileInView={{ scale: [0.9, 1.1, 1] }}
             className="text-8xl mb-10"
           >
