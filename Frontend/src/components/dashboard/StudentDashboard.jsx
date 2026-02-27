@@ -39,10 +39,10 @@ export default function StudentDashboard({ user }) {
       <Card>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <span style={{ fontSize: '2.5rem' }}><FontAwesomeIcon icon={faClipboardList} /></span>
+            <span style={{ fontSize: '2.5rem' }} className="text-white/60"><FontAwesomeIcon icon={faClipboardList} /></span>
             <div>
-              <h3 className="font-bold text-gray-800 text-lg">Adaptive Test Curator</h3>
-              <p className="text-gray-500 text-sm">
+              <h3 className="font-bold text-white text-lg">Adaptive Test Curator</h3>
+              <p className="text-white/50 text-sm">
                 AI-powered adaptive test that adjusts to your learning pace and focus.
               </p>
             </div>
@@ -70,18 +70,18 @@ export default function StudentDashboard({ user }) {
       {/* Accessibility Profile Card */}
       {user?.accessibilityProfile && (
         <Card>
-          <h3 className="font-semibold text-gray-700 mb-3">
+          <h3 className="font-semibold text-white/80 mb-3">
             Your Accessibility Profile
           </h3>
           <div className="flex flex-wrap gap-2">
-            <span className="bg-purple-100 text-purple-700 text-xs px-3 py-1 rounded-full capitalize">
+            <span className="bg-purple-500/20 text-purple-400 text-xs px-3 py-1 rounded-full capitalize">
               {user.accessibilityProfile.disabilityType || 'none'} support
             </span>
             {Object.entries(user.accessibilityProfile.preferences || {}).map(([key, val]) =>
               val ? (
                 <span
                   key={key}
-                  className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full capitalize"
+                  className="bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full capitalize"
                 >
                   {key.replace(/([A-Z])/g, ' $1').toLowerCase()} ✓
                 </span>
@@ -94,27 +94,27 @@ export default function StudentDashboard({ user }) {
       <div className="grid md:grid-cols-2 gap-6">
         {/* Courses from real API */}
         <Card>
-          <h3 className="font-semibold text-gray-700 mb-4">Available Courses</h3>
+          <h3 className="font-semibold text-white/80 mb-4">Available Courses</h3>
 
           {loading && (
             <div className="flex items-center gap-3 py-6 justify-center">
-              <div className="w-6 h-6 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
-              <p className="text-gray-400 text-sm">Loading courses...</p>
+              <div className="w-6 h-6 border-4 border-purple-800 border-t-purple-400 rounded-full animate-spin" />
+              <p className="text-white/40 text-sm">Loading courses...</p>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-              <p className="text-red-500 text-sm font-medium">Failed to load courses</p>
-              <p className="text-red-400 text-xs mt-1">{error}</p>
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+              <p className="text-red-400 text-sm font-medium">Failed to load courses</p>
+              <p className="text-red-400/60 text-xs mt-1">{error}</p>
             </div>
           )}
 
           {!loading && !error && courses.length === 0 && (
-            <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
-              <span className="text-4xl"><FontAwesomeIcon icon={faInbox} /></span>
-              <p className="text-gray-400 text-sm mt-3 font-medium">No courses yet</p>
-              <p className="text-gray-300 text-xs mt-1">
+            <div className="bg-white/5 border-2 border-dashed border-white/10 rounded-xl p-8 text-center">
+              <span className="text-4xl text-white/20"><FontAwesomeIcon icon={faInbox} /></span>
+              <p className="text-white/40 text-sm mt-3 font-medium">No courses yet</p>
+              <p className="text-white/20 text-xs mt-1">
                 Ask your instructor to add some
               </p>
             </div>
@@ -124,18 +124,18 @@ export default function StudentDashboard({ user }) {
             {courses.map(course => (
               <div
                 key={course._id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-purple-50 transition"
+                className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-purple-500/10 transition"
               >
                 <div>
-                  <p className="font-medium text-gray-700 text-sm">{course.title}</p>
-                  <p className="text-gray-400 text-xs mt-0.5">by {course.instructor}</p>
+                  <p className="font-medium text-white/80 text-sm">{course.title}</p>
+                  <p className="text-white/40 text-xs mt-0.5">by {course.instructor}</p>
                   {course.description && (
-                    <p className="text-gray-300 text-xs mt-0.5 line-clamp-1">
+                    <p className="text-white/25 text-xs mt-0.5 line-clamp-1">
                       {course.description}
                     </p>
                   )}
                 </div>
-                <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full whitespace-nowrap ml-3">
+                <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full whitespace-nowrap ml-3">
                   {course.modules?.length ?? 0} modules
                 </span>
               </div>
@@ -145,14 +145,14 @@ export default function StudentDashboard({ user }) {
 
         {/* Recent Activity — still static for now */}
         <Card>
-          <h3 className="font-semibold text-gray-700 mb-4">Recent Activity</h3>
+          <h3 className="font-semibold text-white/80 mb-4">Recent Activity</h3>
           <ActivityFeed />
         </Card>
       </div>
 
       {/* Learning Progress */}
       <Card>
-        <h3 className="font-semibold text-gray-700 mb-4">Learning Progress</h3>
+        <h3 className="font-semibold text-white/80 mb-4">Learning Progress</h3>
         <div className="space-y-4">
           <ProgressCard subject="Braille" progress={75} color="purple" />
           <ProgressCard subject="Sign Language" progress={50} color="blue" />

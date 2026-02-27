@@ -193,7 +193,7 @@ export default function MentalHealthDashboard() {
 
           {moodSubmitted && (
 
-            <div className="mt-4 text-center text-green-600 font-bold text-sm">
+            <div className="mt-4 text-center text-green-400 font-bold text-sm">
 
               <FontAwesomeIcon icon={faCircleCheck} className="mr-1" /> Mood logged! Keep it up <FontAwesomeIcon icon={faDumbbell} className="ml-1" />
 
@@ -260,13 +260,13 @@ export default function MentalHealthDashboard() {
 
                 <div>
 
-                  <p className="font-bold text-sm">
+                  <p className="font-bold text-sm text-white">
 
                     {c.key}
 
                   </p>
 
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-white/50">
 
                     {Math.round(
                       (scores?.[
@@ -286,7 +286,7 @@ export default function MentalHealthDashboard() {
         </div>
       )}
 
-      <div className="text-center py-4 text-xs text-gray-400">
+      <div className="text-center py-4 text-xs text-white/40">
 
         <FontAwesomeIcon icon={faStar} className="mr-1" /> Remember: It's okay to ask for help. You're not alone.
 

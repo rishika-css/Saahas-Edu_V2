@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBraille, faHandPeace, faChartBar, faGamepad, faBrain } from '@fortawesome/free-solid-svg-icons';
+import { faBraille, faHandPeace, faChartBar, faGamepad, faBrain, faGraduationCap } from '@fortawesome/free-solid-svg-icons';
 
 const navLinks = [
   { path: '/braille', label: 'Braille', icon: <FontAwesomeIcon icon={faBraille} /> },
@@ -10,6 +10,7 @@ const navLinks = [
   { path: '/dashboard', label: 'Stats', icon: <FontAwesomeIcon icon={faChartBar} /> },
   { path: '/games', label: 'Play', icon: <FontAwesomeIcon icon={faGamepad} /> },
   { path: '/mental-health', label: 'Wellness', icon: <FontAwesomeIcon icon={faBrain} /> },
+  { path: '/courses', label: 'Courses', icon: <FontAwesomeIcon icon={faGraduationCap} /> },
 ];
 
 export default function Navbar() {
@@ -32,7 +33,7 @@ export default function Navbar() {
             S
           </div>
           <span className="font-display text-2xl tracking-tighter text-white uppercase italic hidden sm:block">
-            Saahas <span className="text-[#D2FF00] font-sans text-[10px] tracking-[0.4em] not-italic ml-2 opacity-50">// Archive</span>
+            Saahas
           </span>
         </Link>
 

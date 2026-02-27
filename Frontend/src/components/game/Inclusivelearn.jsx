@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Navbar from "../common/Navbar";
 import {
     faHand, faHandPeace, faHandPointUp, faPhone as faPhoneIcon,
     faHandPointer, faHandFist, faThumbsUp, faThumbsDown,
@@ -1246,6 +1247,7 @@ export default function InclusiveLearnApp() {
     return (
         <>
             <style>{GLOBAL_CSS}</style>
+            <Navbar />
 
             {/* Sparkles */}
             {[

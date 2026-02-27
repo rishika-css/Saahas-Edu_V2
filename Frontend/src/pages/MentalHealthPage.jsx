@@ -3,7 +3,7 @@ import MentalHealthDashboard from '../components/mentalheath/MentalHealthDashboa
 
 export default function MentalHealthPage() {
   return (
-    <div className="mh-page">
+    <div className="min-h-screen bg-[#060a10]">
       <Navbar />
       <main className="max-w-5xl mx-auto px-4 py-8">
         <MentalHealthDashboard />

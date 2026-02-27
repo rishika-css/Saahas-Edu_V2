@@ -15,8 +15,8 @@ export default function ActivityFeed() {
         <li key={a.id} className="flex items-center gap-3 text-sm">
           <span className="text-xl">{a.icon}</span>
           <div className="flex-1">
-            <p className="text-gray-700 font-medium">{a.text}</p>
-            <p className="text-gray-400 text-xs">{a.time}</p>
+            <p className="text-white/80 font-medium">{a.text}</p>
+            <p className="text-white/40 text-xs">{a.time}</p>
           </div>
         </li>
       ))}
