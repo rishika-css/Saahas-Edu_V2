@@ -22,12 +22,13 @@ const UserSchema = new mongoose.Schema({
   },
 });
 
-// This logic runs every time a user is saved
-UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+// Hash password before saving (Mongoose 8+ async middleware — no `next` callback)
+UserSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  // Skip if already hashed (e.g. hashed in the route before save)
+  if (this.password.startsWith("$2b$") || this.password.startsWith("$2a$")) return;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 export default mongoose.model("User", UserSchema);

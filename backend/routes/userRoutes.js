@@ -10,6 +10,13 @@ const router = express.Router();
 // @desc    Student Intake & Needs Assessment (Sign Up)
 router.post('/register', async (req, res) => {
     try {
+        console.log("--- REGISTER REQUEST ---");
+        console.log("req.body:", JSON.stringify(req.body, null, 2));
+
+        if (!req.body) {
+            return res.status(400).json({ msg: 'Request body is empty. Ensure Content-Type is application/json.' });
+        }
+
         const { name, email, password, accessibilityProfile } = req.body;
 
         // 1. Validation: Ensure all fields are present
@@ -20,10 +27,14 @@ router.post('/register', async (req, res) => {
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ msg: 'Student already registered' });
 
+        // Hash password manually before creating the user
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
         user = new User({
             name,
             email,
-            password, 
+            password: hashedPassword,
             accessibilityProfile
         });
 
@@ -36,21 +47,30 @@ router.post('/register', async (req, res) => {
         }
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
-        
+
         // Return structured user data to avoid sending sensitive info back
-        res.status(201).json({ 
-            token, 
+        res.status(201).json({
+            token,
             user: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
                 accessibilityProfile: user.accessibilityProfile
-            } 
+            }
         });
 
     } catch (err) {
-        console.error("Registration Error:", err.message);
-        res.status(500).json({ msg: 'Server error during intake', error: err.message });
+        console.error("Registration Error:", err);
+        // Duplicate email (race condition — two signups at once)
+        if (err.code === 11000) {
+            return res.status(400).json({ msg: 'Student already registered' });
+        }
+        // Mongoose validation error (e.g. bad enum value)
+        if (err.name === 'ValidationError') {
+            const messages = Object.values(err.errors).map(e => e.message);
+            return res.status(400).json({ msg: messages.join(', ') });
+        }
+        res.status(500).json({ msg: err.message || 'Server error during intake' });
     }
 });
 

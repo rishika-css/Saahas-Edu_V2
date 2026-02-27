@@ -18,6 +18,7 @@ import InclusiveLearnApp from "./components/game/Inclusivelearn";
 
 // Auth + Layout
 import { AuthGuard } from "./components/auth/AuthGuard";
+import { GuestGuard } from "./components/auth/GuestGuard";
 import AccessibilitySidebar from "./components/AccessibilitySidebar";
 
 /* Wrap any page with the accessibility sidebar */
@@ -36,36 +37,29 @@ export default function App() {
       <AccessibilityProvider>
         <BrowserRouter>
           <Routes>
+            {/* ── Public Routes (redirect to /home if already logged in) ── */}
             <Route
               path="/"
               element={
-                <AccessibleLayout>
-                  <LandingPage />
-                </AccessibleLayout>
-              }
-            />
-            <Route path="/login" element={<AccessibleLayout>
-              <LoginPage />
-            </AccessibleLayout>} />{" "}
-            {/* FIXED: was duplicate "/" */}
-
-            {/* ── Public Routes ── */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-
-            {/* ── Dashboard ── */}
-            <Route
-              path="/dashboard"
-              element={
-                <AuthGuard>
+                <GuestGuard>
                   <AccessibleLayout>
-                    <StudentDashboardPage />
+                    <LandingPage />
                   </AccessibleLayout>
-                </AuthGuard>
+                </GuestGuard>
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                <GuestGuard>
+                  <AccessibleLayout>
+                    <LoginPage />
+                  </AccessibleLayout>
+                </GuestGuard>
               }
             />
 
-            {/* ── Home ── */}
+            {/* ── Protected Routes ── */}
             <Route
               path="/home"
               element={
@@ -76,8 +70,16 @@ export default function App() {
                 </AuthGuard>
               }
             />
-
-            {/* ── Braille ── */}
+            <Route
+              path="/dashboard"
+              element={
+                <AuthGuard>
+                  <AccessibleLayout>
+                    <StudentDashboardPage />
+                  </AccessibleLayout>
+                </AuthGuard>
+              }
+            />
             <Route
               path="/braille"
               element={
@@ -88,8 +90,6 @@ export default function App() {
                 </AuthGuard>
               }
             />
-
-            {/* ── Sign Language ── */}
             <Route
               path="/sign-language"
               element={
@@ -100,8 +100,6 @@ export default function App() {
                 </AuthGuard>
               }
             />
-
-            {/* ── Mental Health ── */}
             <Route
               path="/mental-health"
               element={
@@ -112,8 +110,6 @@ export default function App() {
                 </AuthGuard>
               }
             />
-
-            {/* ── Journal ── */}
             <Route
               path="/journal"
               element={
@@ -124,9 +120,6 @@ export default function App() {
                 </AuthGuard>
               }
             />
-
-            {/* ── Test Flow: 3 separate pages ── */}
-
             <Route
               path="/test"
               element={
@@ -135,9 +128,6 @@ export default function App() {
                 </AuthGuard>
               }
             />
-
-
-            {/* ── Courses ── */}
             <Route
               path="/courses"
               element={
@@ -168,11 +158,9 @@ export default function App() {
                 </AuthGuard>
               }
             />
-            <Route path="*" element={<Navigate to="/" />} />
 
             {/* ── Fallback ── */}
             <Route path="*" element={<Navigate to="/" />} />
-
           </Routes>
         </BrowserRouter>
       </AccessibilityProvider>
