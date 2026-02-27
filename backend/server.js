@@ -1,8 +1,8 @@
-
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
-import dotenv from "dotenv";
 import dns from "node:dns";
 
 // Use Google public DNS to resolve MongoDB Atlas SRV records

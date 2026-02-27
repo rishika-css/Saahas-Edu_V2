@@ -3,8 +3,7 @@ import { createContext, useState, useContext } from 'react';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // Initialize user from localStorage on first load
-  // so page refresh doesn't log the user out instantly
+  // Persist user across page refreshes via localStorage
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;
@@ -13,17 +12,17 @@ export function AuthProvider({ children }) {
   const login = (userData, token) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    // Store JWT token separately so api.js can read it via getToken()
+    // Store JWT token so api.js / axios can attach it to requests
     if (token) localStorage.setItem('token', token);
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    localStorage.removeItem('token'); // Clear token on logout
+    localStorage.removeItem('token');
   };
 
-  // Keep for backward compatibility with AuthGuard
+  // Kept for backward compatibility with AuthGuard
   const getStoredUser = () => {
     const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;

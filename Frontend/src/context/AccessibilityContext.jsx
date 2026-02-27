@@ -1,20 +1,21 @@
-import { createContext, useState, useContext } from 'react'
+import { createContext, useState, useContext } from 'react';
 
-const AccessibilityContext = createContext(null)
+const AccessibilityContext = createContext(null);
 
 export function AccessibilityProvider({ children }) {
-  const [highContrast, setHighContrast] = useState(false)
-  const [fontSize, setFontSize] = useState('normal')
-  const [dyslexiaFont, setDyslexiaFont] = useState(false)
-  const [adhdFocus, setAdhdFocus] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
+  const [highContrast, setHighContrast] = useState(false);
+  const [fontSize, setFontSize] = useState('normal');
+  const [dyslexiaFont, setDyslexiaFont] = useState(false);
+  const [adhdFocus, setAdhdFocus] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
 
+  // Build className dynamically based on active settings
   const containerClasses = [
     'min-h-screen',
     highContrast ? 'bg-black text-white' : '',
-    darkMode ? 'bg-gray-900 text-gray-100' : '',
+    darkMode && !highContrast ? 'bg-gray-900 text-gray-100' : '',
     dyslexiaFont ? 'font-[Lexend]' : '',
-  ].filter(Boolean).join(' ')
+  ].filter(Boolean).join(' ');
 
   return (
     <AccessibilityContext.Provider value={{
@@ -28,7 +29,7 @@ export function AccessibilityProvider({ children }) {
         {children}
       </div>
     </AccessibilityContext.Provider>
-  )
+  );
 }
 
-export const useAccessibility = () => useContext(AccessibilityContext)
+export const useAccessibility = () => useContext(AccessibilityContext);
