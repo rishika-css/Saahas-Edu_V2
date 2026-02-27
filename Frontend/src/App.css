@@ -1,0 +1,263 @@
+@import "tailwindcss";
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #f4845f;
+  --primary-light: #f9b49a;
+  --primary-dark: #d9623f;
+  --background: #fff8f0;
+  --surface: #ffffff;
+  --text: #3d2c1e;
+  --text-light: #7a5c4a;
+  --success: #5cb85c;
+  --warning: #f0a500;
+  --danger: #e74c3c;
+  --border: #f0ddd0;
+  --shadow: 0 4px 16px rgba(244, 132, 95, 0.15);
+  --radius: 16px;
+  --font-size-base: 18px;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+  font-size: var(--font-size-base);
+  line-height: 1.7;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  border: none;
+  border-radius: var(--radius);
+  padding: 14px 28px;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--border);
+  color: var(--text);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: white;
+}
+
+input, select {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus {
+  border-color: var(--primary);
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: var(--background);
+}
+
+.page-top {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  background-color: var(--background);
+}
+
+h1 {
+  font-size: 2rem;
+  color: var(--primary-dark);
+  margin-bottom: 8px;
+}
+
+h2 {
+  font-size: 1.5rem;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+p {
+  color: var(--text-light);
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.success {
+  color: var(--success);
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+/* ── Dyslexia Font ── */
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap');
+
+.dyslexia-font body,
+.dyslexia-font * {
+  font-family: 'Lexend', sans-serif !important;
+  letter-spacing: 0.05em;
+  word-spacing: 0.1em;
+  line-height: 1.9;
+}
+
+/* ── High Contrast ── */
+.high-contrast {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+.high-contrast .page,
+.high-contrast .page-top {
+  background-color: #000 !important;
+  align-items: center !important;
+}
+.high-contrast .card {
+  background: #111 !important;
+  border: 2px solid #fff !important;
+  color: #fff !important;
+}
+.high-contrast button {
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid #fff !important;
+}
+.high-contrast input {
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #fff !important;
+}
+.high-contrast p, .high-contrast span, .high-contrast label {
+  color: #fff !important;
+}
+
+/* ── Dark Mode ── */
+.dark-mode {
+  background-color: #1a1a2e !important;
+  color: #e0e0e0 !important;
+}
+.dark-mode .card {
+  background: #16213e !important;
+  border-color: #0f3460 !important;
+  color: #e0e0e0 !important;
+}
+.dark-mode button.btn-primary {
+  background-color: #e94560 !important;
+}
+.dark-mode input {
+  background: #16213e !important;
+  color: #e0e0e0 !important;
+  border-color: #0f3460 !important;
+}
+.dark-mode p, .dark-mode span {
+  color: #b0b0b0 !important;
+}
+
+/* ── ADHD Focus (tile blur handled in component) ── */
+.adhd-focus * {
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+/* ── Accessibility Panel ── */
+.a11y-panel {
+  position: fixed;
+  top: 0;
+  right: -280px;
+  width: 280px;
+  height: 100vh;
+  background: #ffffff;
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  z-index: 3000;
+  transition: right 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  gap: 16px;
+  overflow-y: auto;
+}
+.a11y-panel.open {
+  right: 0;
+}
+.dark-mode .a11y-panel {
+  background: #16213e;
+  color: #e0e0e0;
+}
+.high-contrast .a11y-panel {
+  background: #000;
+  color: #fff;
+  border-left: 2px solid #fff;
+}
+
+.a11y-toggle-btn {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  background: #f4845f;
+  color: white;
+  border: none;
+  border-radius: 12px 0 0 12px;
+  padding: 12px 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 3001;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+}
