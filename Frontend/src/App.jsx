@@ -14,9 +14,6 @@ import JournalPage from "./pages/JournalPage";
 import TestPage from "./pages/TestPage";
 import CoursesPage from "./pages/CoursePage";
 import VideoPlayerPage from "./pages/VideoPlayerPage";
-
-// Auth + Layout
-import { AuthGuard } from "./components/auth/AuthGuard";
 import AccessibilitySidebar from "./components/AccessibilitySidebar";
 
 /* Wrap any page with the accessibility sidebar */
@@ -35,8 +32,17 @@ export default function App() {
       <AccessibilityProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />{" "}
+            <Route
+              path="/"
+              element={
+                <AccessibleLayout>
+                  <LandingPage />
+                </AccessibleLayout>
+              }
+            />
+            <Route path="/login" element={<AccessibleLayout>
+              <LoginPage />
+            </AccessibleLayout>} />{" "}
             {/* FIXED: was duplicate "/" */}
             <Route
               path="/home"
@@ -96,20 +102,7 @@ export default function App() {
                 </AuthGuard>
               }
             />
-
-            {/* ── Test Flow: 3 separate pages ── */}
-
-            <Route
-              path="/test"
-              element={
-                <AuthGuard>
-                  <TestPage />
-                </AuthGuard>
-              }
-            />
-
-
-            {/* ── Courses ── */}
+            <Route path="*" element={<Navigate to="/" />} />
             <Route
               path="/courses"
               element={
@@ -130,10 +123,6 @@ export default function App() {
                 </AuthGuard>
               }
             />
-
-            {/* ── Fallback ── */}
-            <Route path="*" element={<Navigate to="/" />} />
-
           </Routes>
         </BrowserRouter>
       </AccessibilityProvider>
