@@ -1,39 +1,46 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // Persist user across page refreshes via localStorage
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
   });
 
-  const login = (userData, token) => {
+  const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
+
+  // Finish initial hydration
+  useEffect(() => { setLoading(false); }, []);
+
+  const login = (userData, newToken) => {
     setUser(userData);
+    setToken(newToken);
     localStorage.setItem('user', JSON.stringify(userData));
-    // Store JWT token so api.js / axios can attach it to requests
-    if (token) localStorage.setItem('token', token);
+    if (newToken) localStorage.setItem('token', newToken);
   };
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
   };
 
-  // Kept for backward compatibility with AuthGuard
   const getStoredUser = () => {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch { return null; }
   };
 
-  const isAuthenticated = () => {
-    return !!localStorage.getItem('token');
-  };
+  const isAuthenticated = () => !!token;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, getStoredUser, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, getStoredUser, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );
