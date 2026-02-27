@@ -463,7 +463,7 @@ export default function useBehaviourAI({ onDetect } = {}) {
     window._AIDebug = () => {
       const res = score();
       const bar = v => "█".repeat(Math.round(v * 10)) + "░".repeat(10 - Math.round(v * 10));
-      console.group("%c🧠 AI Engine", "font-weight:bold;font-size:13px");
+      console.group("%cAI Engine", "font-weight:bold;font-size:13px");
       ["adhd", "dyslexia", "motor"].forEach(k => {
         const { probability: p, signals: s } = res[k];
         console.group(`%c${k.toUpperCase()} ${(p * 100).toFixed(1)}% ${bar(p)} (need ${CFG.THRESHOLD[k] * 100}%)`,

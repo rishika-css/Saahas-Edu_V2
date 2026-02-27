@@ -1,3 +1,6 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBullseye, faWandMagicSparkles } from '@fortawesome/free-solid-svg-icons';
+
 function AdhdDetectionModal({ onConfirm, onDismiss }) {
   return (
     <div style={{
@@ -20,7 +23,7 @@ function AdhdDetectionModal({ onConfirm, onDismiss }) {
         textAlign: "center",
         boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
       }}>
-        <div style={{ fontSize: "3rem", marginBottom: "12px" }}>🎯</div>
+        <div style={{ fontSize: "3rem", marginBottom: "12px" }}><FontAwesomeIcon icon={faBullseye} style={{ color: '#d9623f' }} /></div>
         <h2 style={{ color: "#d9623f", marginBottom: "8px" }}>
           We noticed something!
         </h2>
@@ -43,7 +46,7 @@ function AdhdDetectionModal({ onConfirm, onDismiss }) {
             onClick={onConfirm}
             style={{ minWidth: "120px" }}
           >
-            Yes, turn it on ✨
+            Yes, turn it on <FontAwesomeIcon icon={faWandMagicSparkles} className="ml-1" />
           </button>
         </div>
       </div>

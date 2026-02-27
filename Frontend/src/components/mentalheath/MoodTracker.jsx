@@ -1,11 +1,13 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faFaceSmileBeam, faFaceSmile, faFaceMeh, faFaceFrown, faFaceSadTear, faCircleCheck, faDumbbell } from '@fortawesome/free-solid-svg-icons'
 
 const moods = [
-  { emoji: '😄', label: 'Great', value: 5 },
-  { emoji: '🙂', label: 'Good', value: 4 },
-  { emoji: '😐', label: 'Okay', value: 3 },
-  { emoji: '😔', label: 'Low', value: 2 },
-  { emoji: '😢', label: 'Bad', value: 1 },
+  { icon: faFaceSmileBeam, label: 'Great', value: 5, color: '#22c55e' },
+  { icon: faFaceSmile, label: 'Good', value: 4, color: '#84cc16' },
+  { icon: faFaceMeh, label: 'Okay', value: 3, color: '#eab308' },
+  { icon: faFaceFrown, label: 'Low', value: 2, color: '#f97316' },
+  { icon: faFaceSadTear, label: 'Bad', value: 1, color: '#ef4444' },
 ]
 
 export default function MoodTracker() {
@@ -23,7 +25,7 @@ export default function MoodTracker() {
             className={`flex flex-col items-center gap-1 p-3 rounded-xl transition
               ${selected === m.value ? 'bg-purple-100 scale-110' : 'hover:bg-gray-100'}`}
           >
-            <span className="text-3xl">{m.emoji}</span>
+            <span className="text-3xl"><FontAwesomeIcon icon={m.icon} style={{ color: m.color }} /></span>
             <span className="text-xs text-gray-500">{m.label}</span>
           </button>
         ))}
@@ -36,7 +38,7 @@ export default function MoodTracker() {
           Log Mood
         </button>
       )}
-      {submitted && <p className="text-green-600 text-sm font-medium">✅ Mood logged! Keep going 💪</p>}
+      {submitted && <p className="text-green-600 text-sm font-medium"><FontAwesomeIcon icon={faCircleCheck} className="mr-1" /> Mood logged! Keep going <FontAwesomeIcon icon={faDumbbell} className="ml-1" /></p>}
     </div>
   )
 }

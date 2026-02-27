@@ -8,11 +8,11 @@ import Timer from '../components/Timer';
 import ProgressBar from '../components/ProgressBar';
 import BehaviorTracker from '../components/BehaviorTracker';
 import AccessibilityToolbar from '../components/AccessibilityToolbar';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBrain, faMoon, faEye, faShuffle, faClock, faHourglassHalf, faFrown, faTrophy, faHandsClapping, faDumbbell, faClipboardList, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 import FocusTileOverlay from '../components/FocusTileOverlay';
 import AdhdDetectionModal from '../components/AdhdDetectionModal';
 import { useAdhdMouseDetection } from '../hooks/useAdhdMouseDetection';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHourglassHalf, faFrown, faTrophy, faHandsClapping, faDumbbell, faClipboardList, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 export default function TestPage() {
   const { user } = useAuth();
@@ -197,20 +197,20 @@ export default function TestPage() {
               border: '1px solid #f0ddd0',
             }}>
               <p style={{ fontWeight: 700, color: '#d9623f', marginBottom: '8px' }}>
-                🧠 Behavior Analysis
+                <FontAwesomeIcon icon={faBrain} className="mr-1" /> Behavior Analysis
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem', color: '#7a5c4a' }}>
                 {result.behaviorSummary.idleCount > 0 && (
-                  <span>😴 Idle moments: {result.behaviorSummary.idleCount}</span>
+                  <span><FontAwesomeIcon icon={faMoon} className="mr-1" /> Idle moments: {result.behaviorSummary.idleCount}</span>
                 )}
                 {result.behaviorSummary.gazeAwayCount > 0 && (
-                  <span>👀 Gaze away: {result.behaviorSummary.gazeAwayCount}</span>
+                  <span><FontAwesomeIcon icon={faEye} className="mr-1" /> Gaze away: {result.behaviorSummary.gazeAwayCount}</span>
                 )}
                 {result.behaviorSummary.tabSwitchCount > 0 && (
-                  <span>🔀 Tab switches: {result.behaviorSummary.tabSwitchCount}</span>
+                  <span><FontAwesomeIcon icon={faShuffle} className="mr-1" /> Tab switches: {result.behaviorSummary.tabSwitchCount}</span>
                 )}
                 {result.behaviorSummary.timerAdjustments > 0 && (
-                  <span>⏱️ Time extensions: {result.behaviorSummary.timerAdjustments}</span>
+                  <span><FontAwesomeIcon icon={faClock} className="mr-1" /> Time extensions: {result.behaviorSummary.timerAdjustments}</span>
                 )}
               </div>
             </div>

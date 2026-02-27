@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import Navbar from "../components/common/Navbar";
 import useBehaviourAI from "../hooks/useBehaviourAI";
 import BehaviourInsightPanel from "../components/mentalheath/BehaviourInsightPanel";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faRainbow, faSpa, faPhone, faMicrophone, faStop, faVolumeHigh, faVolumeXmark, faPaperPlane, faLock } from "@fortawesome/free-solid-svg-icons";
 /* ================================================================
    IMPORTANT: Add your Gemini API key to your .env file:
    VITE_GEMINI_API_KEY=your_key_here
@@ -36,7 +38,7 @@ export default function JournalPage() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      text: "Hi, I'm Aura 🌸 — your safe space to think out loud. What's on your mind today? You can type or tap the mic to speak freely.",
+      text: "Hi, I'm Aura — your safe space to think out loud. What's on your mind today? You can type or tap the mic to speak freely.",
     },
   ]);
   const [inputText, setInputText] = useState("");
@@ -209,7 +211,7 @@ export default function JournalPage() {
     // Crisis — handle locally, still show in chat
     if (checkCrisis(text)) {
       const crisisReply =
-        "I hear you, and I'm really glad you told me 💙 You matter so much. Please reach out right now — Kiran Mental Health Helpline: 1800-599-0019 (free, 24/7, multiple languages). You are not alone in this.";
+        "I hear you, and I'm really glad you told me. You matter so much. Please reach out right now — Kiran Mental Health Helpline: 1800-599-0019 (free, 24/7, multiple languages). You are not alone in this.";
 
       setMessages(prev => [
         ...prev,
@@ -234,7 +236,7 @@ export default function JournalPage() {
     } catch (err) {
       console.error("Gemini error:", err);
       const errMsg =
-        "I'm having a little trouble connecting right now 💙 I'm still here — please try again in a moment.";
+        "I'm having a little trouble connecting right now. I'm still here — please try again in a moment.";
       setMessages(prev => [...prev, { role: "assistant", text: errMsg, error: true }]);
     } finally {
       setLoading(false);
@@ -280,7 +282,7 @@ export default function JournalPage() {
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
 
         <div>
-          <h2 className="text-2xl font-black">🌈 Safe Mental Support Space</h2>
+          <h2 className="text-2xl font-black"><FontAwesomeIcon icon={faRainbow} className="mr-2" /> Safe Mental Support Space</h2>
           <p className="text-gray-500 text-sm mt-1">
             Private &amp; judgement-free. Speak or type freely — Aura is here to listen.
           </p>
@@ -302,7 +304,7 @@ export default function JournalPage() {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 20, flexShrink: 0,
               }}>
-                🌸
+                <FontAwesomeIcon icon={faSpa} style={{ color: "white" }} />
               </div>
               <div>
                 <p className="font-black text-gray-800 text-sm">Aura</p>
@@ -330,9 +332,9 @@ export default function JournalPage() {
                       width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
                       background: "linear-gradient(135deg, #a855f7, #6366f1)",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 13, marginRight: 8, marginTop: 4,
+                      fontSize: 13, marginRight: 8, marginTop: 4, color: "white",
                     }}>
-                      🌸
+                      <FontAwesomeIcon icon={faSpa} />
                     </div>
                   )}
 
@@ -362,7 +364,7 @@ export default function JournalPage() {
                         color: "#92400e", padding: "6px 10px",
                         background: "rgba(255,255,255,0.6)", borderRadius: 8,
                       }}>
-                        📞 Kiran Helpline: 1800-599-0019 · Free · 24/7
+                        <FontAwesomeIcon icon={faPhone} className="mr-1" /> Kiran Helpline: 1800-599-0019 · Free · 24/7
                       </div>
                     )}
                   </div>
@@ -376,9 +378,9 @@ export default function JournalPage() {
                     width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
                     background: "linear-gradient(135deg, #a855f7, #6366f1)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, marginRight: 8,
+                    fontSize: 13, marginRight: 8, color: "white",
                   }}>
-                    🌸
+                    <FontAwesomeIcon icon={faSpa} />
                   </div>
                   <div style={{
                     padding: "14px 18px",
@@ -428,7 +430,7 @@ export default function JournalPage() {
                   onKeyDown={handleKeyDown}
                   placeholder={
                     listening
-                      ? "Speak now — I'm listening 🎤"
+                      ? "Speak now — I'm listening..."
                       : "Type here or press the mic... (Enter to send)"
                   }
                   rows={2}
@@ -457,7 +459,7 @@ export default function JournalPage() {
                     animation: listening ? "mhPulse 1.5s ease-in-out infinite" : "none",
                   }}
                 >
-                  {listening ? "⏹" : "🎤"}
+                  {listening ? <FontAwesomeIcon icon={faStop} /> : <FontAwesomeIcon icon={faMicrophone} />}
                 </button>
 
                 {/* Voice reply toggle */}
@@ -475,7 +477,7 @@ export default function JournalPage() {
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >
-                  {voiceMode ? "🔊" : "🔇"}
+                  {voiceMode ? <FontAwesomeIcon icon={faVolumeHigh} /> : <FontAwesomeIcon icon={faVolumeXmark} />}
                 </button>
 
                 {/* Send */}
@@ -493,12 +495,12 @@ export default function JournalPage() {
                     justifyContent: "center", transition: "all 0.2s",
                   }}
                 >
-                  ➤
+                  <FontAwesomeIcon icon={faPaperPlane} />
                 </button>
               </div>
 
               <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginTop: 8 }}>
-                🔒 Everything shared here is private · Alt+V for quick mic toggle
+                <FontAwesomeIcon icon={faLock} className="mr-1" /> Everything shared here is private · Alt+V for quick mic toggle
               </p>
             </div>
           </div>

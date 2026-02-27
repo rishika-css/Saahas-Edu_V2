@@ -1,51 +1,131 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+    faHand, faHandPeace, faHandPointUp, faPhone as faPhoneIcon,
+    faHandPointer, faHandFist, faThumbsUp, faThumbsDown,
+    faFutbol, faTrophy, faHeart, faUserGroup, faSun, faDog,
+    faAppleWhole, faRainbow, faFaceSmile, faCircleCheck, faCircleXmark,
+    faFaceSmileBeam, faFaceSadTear, faFaceAngry, faFaceFlushed,
+    faFaceSurprise, faFaceGrinStars, faFaceTired, faFaceMeh,
+    faStar, faMoon, faCat, faFish, faMusic, faDove,
+    faCircle, faSquare, faCaretUp,
+    fa1, fa2, fa3, fa4,
+    faCloudRain, faPizzaSlice, faBurger,
+    faHandsClapping, faShoePrints,
+    faBrain, faGear, faBookOpen, faMouse, faVolumeHigh,
+    faRobot, faArrowsRotate, faPlay, faBullseye, faWandMagicSparkles,
+    faClover, faGem, faFeather, faCandyCane, faHandSparkles,
+    faSeedling, faLemon,
+} from "@fortawesome/free-solid-svg-icons";
+
+/* Helper to render FA icons inline */
+const I = ({ icon, color, size }) => <FontAwesomeIcon icon={icon} style={{ color: color || "inherit", fontSize: size || "inherit" }} />;
 
 /* ═══════════════════════════════════════════
    DATA
 ═══════════════════════════════════════════ */
 
 const ASL_DATA = [
-    { hand: "🤚", letter: "B", word: "Ball", hint: "⚽ A round toy", opts: ["A", "B", "C", "D"] },
-    { hand: "✌️", letter: "V", word: "Victory", hint: "🏆 Win!", opts: ["U", "V", "W", "X"] },
-    { hand: "🤟", letter: "ILY", word: "I Love You", hint: "❤️ A special feeling", opts: ["ILY", "Y", "L", "I"] },
-    { hand: "👌", letter: "F", word: "Friend", hint: "👫 Someone you like", opts: ["E", "F", "G", "H"] },
-    { hand: "🤙", letter: "Y", word: "Yellow", hint: "🌻 A bright colour", opts: ["W", "X", "Y", "Z"] },
-    { hand: "☝️", letter: "D", word: "Dog", hint: "🐶 Woof!", opts: ["A", "B", "D", "E"] },
-    { hand: "🖐️", letter: "5", word: "Five", hint: "5️⃣ A number", opts: ["3", "4", "5", "6"] },
-    { hand: "✊", letter: "A", word: "Apple", hint: "🍎 A red fruit", opts: ["A", "B", "C", "S"] },
-    { hand: "🤞", letter: "R", word: "Rainbow", hint: "🌈 After rain", opts: ["P", "Q", "R", "S"] },
-    { hand: "👋", letter: "Hello", word: "Greeting", hint: "😊 How you say hi", opts: ["Hello", "Bye", "Yes", "No"] },
-    { hand: "👍", letter: "Good", word: "Positive", hint: "✅ When something is nice", opts: ["Good", "Bad", "Stop", "Go"] },
-    { hand: "👎", letter: "No", word: "Disagree", hint: "❌ Not yes", opts: ["Yes", "Maybe", "No", "Wait"] },
+    { hand: faHand, letter: "B", word: "Ball", hint: "A round toy", hintIcon: faFutbol, opts: ["A", "B", "C", "D"] },
+    { hand: faHandPeace, letter: "V", word: "Victory", hint: "Win!", hintIcon: faTrophy, opts: ["U", "V", "W", "X"] },
+    { hand: faHandPeace, letter: "ILY", word: "I Love You", hint: "A special feeling", hintIcon: faHeart, opts: ["ILY", "Y", "L", "I"] },
+    { hand: faHandPointUp, letter: "F", word: "Friend", hint: "Someone you like", hintIcon: faUserGroup, opts: ["E", "F", "G", "H"] },
+    { hand: faPhoneIcon, letter: "Y", word: "Yellow", hint: "A bright colour", hintIcon: faSun, opts: ["W", "X", "Y", "Z"] },
+    { hand: faHandPointer, letter: "D", word: "Dog", hint: "Woof!", hintIcon: faDog, opts: ["A", "B", "D", "E"] },
+    { hand: faHand, letter: "5", word: "Five", hint: "A number", hintIcon: fa4, opts: ["3", "4", "5", "6"] },
+    { hand: faHandFist, letter: "A", word: "Apple", hint: "A red fruit", hintIcon: faAppleWhole, opts: ["A", "B", "C", "S"] },
+    { hand: faHandPeace, letter: "R", word: "Rainbow", hint: "After rain", hintIcon: faRainbow, opts: ["P", "Q", "R", "S"] },
+    { hand: faHandSparkles, letter: "Hello", word: "Greeting", hint: "How you say hi", hintIcon: faFaceSmile, opts: ["Hello", "Bye", "Yes", "No"] },
+    { hand: faThumbsUp, letter: "Good", word: "Positive", hint: "When something is nice", hintIcon: faCircleCheck, opts: ["Good", "Bad", "Stop", "Go"] },
+    { hand: faThumbsDown, letter: "No", word: "Disagree", hint: "Not yes", hintIcon: faCircleXmark, opts: ["Yes", "Maybe", "No", "Wait"] },
 ];
 
 const EMOTIONS = [
-    { face: "😊", name: "Happy", situation: "You get your favourite ice cream! You feel…", opts: ["Happy", "Sad", "Angry", "Scared"] },
-    { face: "😢", name: "Sad", situation: "Your toy broke. You feel…", opts: ["Happy", "Sad", "Surprised", "Excited"] },
-    { face: "😠", name: "Angry", situation: "Someone took your snack. You feel…", opts: ["Happy", "Calm", "Angry", "Sleepy"] },
-    { face: "😨", name: "Scared", situation: "You hear a very loud thunder. You feel…", opts: ["Excited", "Scared", "Happy", "Proud"] },
-    { face: "😮", name: "Surprised", situation: "Your friends throw a surprise party! You feel…", opts: ["Bored", "Surprised", "Tired", "Angry"] },
-    { face: "🤩", name: "Excited", situation: "Tomorrow you go to the fun park! You feel…", opts: ["Excited", "Sad", "Confused", "Worried"] },
-    { face: "😴", name: "Sleepy", situation: "It is late at night. You feel…", opts: ["Hungry", "Sleepy", "Excited", "Surprised"] },
-    { face: "😌", name: "Calm", situation: "You take deep breaths and relax. You feel…", opts: ["Calm", "Angry", "Scared", "Anxious"] },
-    { face: "😰", name: "Worried", situation: "You have a test tomorrow. You feel…", opts: ["Happy", "Worried", "Excited", "Calm"] },
-    { face: "🥰", name: "Loved", situation: "Your family gives you a big hug. You feel…", opts: ["Lonely", "Angry", "Loved", "Bored"] },
+    { face: faFaceSmileBeam, name: "Happy", color: "#22c55e", situation: "You get your favourite ice cream! You feel…", opts: ["Happy", "Sad", "Angry", "Scared"] },
+    { face: faFaceSadTear, name: "Sad", color: "#3b82f6", situation: "Your toy broke. You feel…", opts: ["Happy", "Sad", "Surprised", "Excited"] },
+    { face: faFaceAngry, name: "Angry", color: "#ef4444", situation: "Someone took your snack. You feel…", opts: ["Happy", "Calm", "Angry", "Sleepy"] },
+    { face: faFaceFlushed, name: "Scared", color: "#a855f7", situation: "You hear a very loud thunder. You feel…", opts: ["Excited", "Scared", "Happy", "Proud"] },
+    { face: faFaceSurprise, name: "Surprised", color: "#f97316", situation: "Your friends throw a surprise party! You feel…", opts: ["Bored", "Surprised", "Tired", "Angry"] },
+    { face: faFaceGrinStars, name: "Excited", color: "#eab308", situation: "Tomorrow you go to the fun park! You feel…", opts: ["Excited", "Sad", "Confused", "Worried"] },
+    { face: faFaceTired, name: "Sleepy", color: "#6b7280", situation: "It is late at night. You feel…", opts: ["Hungry", "Sleepy", "Excited", "Surprised"] },
+    { face: faFaceSmile, name: "Calm", color: "#14b8a6", situation: "You take deep breaths and relax. You feel…", opts: ["Calm", "Angry", "Scared", "Anxious"] },
+    { face: faFaceFlushed, name: "Worried", color: "#f59e0b", situation: "You have a test tomorrow. You feel…", opts: ["Happy", "Worried", "Excited", "Calm"] },
+    { face: faHeart, name: "Loved", color: "#ec4899", situation: "Your family gives you a big hug. You feel…", opts: ["Lonely", "Angry", "Loved", "Bored"] },
 ];
 
 const PATTERNS = [
-    { seq: ["🔴", "🔵", "🔴", "🔵", "🔴"], ans: "🔵", opts: ["🔵", "🟢", "🟡", "🔴"] },
-    { seq: ["⭐", "⭐", "🌙", "⭐", "⭐"], ans: "🌙", opts: ["⭐", "🌙", "☀️", "💫"] },
-    { seq: ["🐶", "🐱", "🐶", "🐱", "🐶"], ans: "🐱", opts: ["🐹", "🐱", "🦊", "🐰"] },
-    { seq: ["🍎", "🍊", "🍋", "🍎", "🍊"], ans: "🍋", opts: ["🍎", "🍊", "🍋", "🍇"] },
-    { seq: ["🔺", "🟦", "🔺", "🟦", "🔺"], ans: "🟦", opts: ["🔺", "🟦", "🟣", "🟩"] },
-    { seq: ["1️⃣", "2️⃣", "3️⃣", "1️⃣", "2️⃣"], ans: "3️⃣", opts: ["1️⃣", "2️⃣", "3️⃣", "4️⃣"] },
-    { seq: ["🌞", "🌧️", "🌞", "🌧️", "🌞"], ans: "🌧️", opts: ["🌞", "🌧️", "⛄", "🌈"] },
-    { seq: ["🍕", "🍔", "🍕", "🍔", "🍕"], ans: "🍔", opts: ["🍕", "🍔", "🌮", "🌯"] },
-    { seq: ["🌹", "🌼", "🌹", "🌼", "🌹"], ans: "🌼", opts: ["🌹", "🌼", "🌸", "🌺"] },
-    { seq: ["👏", "👏", "🦶", "👏", "👏"], ans: "🦶", opts: ["👏", "🦶", "✋", "🤜"] },
+    { seq: ["red", "blue", "red", "blue", "red"], ans: "blue", opts: ["blue", "green", "yellow", "red"] },
+    { seq: ["star", "star", "moon", "star", "star"], ans: "moon", opts: ["star", "moon", "sun", "gem"] },
+    { seq: ["dog", "cat", "dog", "cat", "dog"], ans: "cat", opts: ["fish", "cat", "dove", "seedling"] },
+    { seq: ["apple", "lemon", "star", "apple", "lemon"], ans: "star", opts: ["apple", "lemon", "star", "clover"] },
+    { seq: ["triangle", "square", "triangle", "square", "triangle"], ans: "square", opts: ["triangle", "square", "circle", "gem"] },
+    { seq: ["one", "two", "three", "one", "two"], ans: "three", opts: ["one", "two", "three", "four"] },
+    { seq: ["sun", "rain", "sun", "rain", "sun"], ans: "rain", opts: ["sun", "rain", "gem", "rainbow"] },
+    { seq: ["pizza", "burger", "pizza", "burger", "pizza"], ans: "burger", opts: ["pizza", "burger", "apple", "lemon"] },
+    { seq: ["heart", "star", "heart", "star", "heart"], ans: "star", opts: ["heart", "star", "circle", "gem"] },
+    { seq: ["clap", "clap", "foot", "clap", "clap"], ans: "foot", opts: ["clap", "foot", "hand", "fist"] },
 ];
 
-const MEM_SYMBOLS = ["🌟", "🍀", "🦋", "🎵", "🌈", "🐬", "🍭", "🏆"];
+const PATTERN_ICONS = {
+    red: { icon: faCircle, color: "#ef4444" },
+    blue: { icon: faCircle, color: "#3b82f6" },
+    green: { icon: faCircle, color: "#22c55e" },
+    yellow: { icon: faCircle, color: "#eab308" },
+    star: { icon: faStar, color: "#eab308" },
+    moon: { icon: faMoon, color: "#a78bfa" },
+    sun: { icon: faSun, color: "#facc15" },
+    gem: { icon: faGem, color: "#c084fc" },
+    dog: { icon: faDog, color: "#f97316" },
+    cat: { icon: faCat, color: "#f472b6" },
+    fish: { icon: faFish, color: "#38bdf8" },
+    dove: { icon: faDove, color: "#94a3b8" },
+    seedling: { icon: faSeedling, color: "#22c55e" },
+    apple: { icon: faAppleWhole, color: "#ef4444" },
+    lemon: { icon: faLemon, color: "#eab308" },
+
+    clover: { icon: faClover, color: "#22c55e" },
+    triangle: { icon: faCaretUp, color: "#ef4444" },
+    square: { icon: faSquare, color: "#3b82f6" },
+    circle: { icon: faCircle, color: "#a855f7" },
+    one: { icon: fa1, color: "#38bdf8" },
+    two: { icon: fa2, color: "#f472b6" },
+    three: { icon: fa3, color: "#4ade80" },
+    four: { icon: fa4, color: "#facc15" },
+    rain: { icon: faCloudRain, color: "#64748b" },
+    rainbow: { icon: faRainbow, color: "#f472b6" },
+    pizza: { icon: faPizzaSlice, color: "#f97316" },
+    burger: { icon: faBurger, color: "#eab308" },
+    heart: { icon: faHeart, color: "#ec4899" },
+    clap: { icon: faHandsClapping, color: "#facc15" },
+    foot: { icon: faShoePrints, color: "#8b5cf6" },
+    hand: { icon: faHand, color: "#f97316" },
+    fist: { icon: faHandFist, color: "#ef4444" },
+};
+
+const PatIcon = ({ name, size }) => {
+    const p = PATTERN_ICONS[name];
+    if (!p) return name;
+    return <FontAwesomeIcon icon={p.icon} style={{ color: p.color, fontSize: size || "1.5rem" }} />;
+};
+
+const MEM_SYMBOLS = ["star", "clover", "dove", "music", "rainbow", "fish", "candy", "trophy"];
+
+const MEM_ICONS = {
+    star: { icon: faStar, color: "#eab308" },
+    clover: { icon: faClover, color: "#22c55e" },
+    dove: { icon: faDove, color: "#8b5cf6" },
+    music: { icon: faMusic, color: "#ec4899" },
+    rainbow: { icon: faRainbow, color: "#f472b6" },
+    fish: { icon: faFish, color: "#38bdf8" },
+    candy: { icon: faCandyCane, color: "#ef4444" },
+    trophy: { icon: faTrophy, color: "#f59e0b" },
+};
+
+const MemIcon = ({ name, size }) => {
+    const m = MEM_ICONS[name];
+    if (!m) return name;
+    return <FontAwesomeIcon icon={m.icon} style={{ color: m.color, fontSize: size || "1.6rem" }} />;
+};
 
 function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
@@ -266,15 +346,15 @@ function useBehaviourTracker() {
             const scores = computeScores();
             if (!latched.current.dyslexia && scores.dyslexia >= CFG.THRESHOLD.dyslexia) {
                 latched.current.dyslexia = true;
-                fireToast("📖", "Dyslexia Font Mode activated", scores.dyslexia, "#064e3b", "#047857");
+                fireToast("book", "Dyslexia Font Mode activated", scores.dyslexia, "#064e3b", "#047857");
             }
             if (!latched.current.adhd && scores.adhd >= CFG.THRESHOLD.adhd) {
                 latched.current.adhd = true;
-                fireToast("🎯", "ADHD Focus Mode activated", scores.adhd, "#1e3a8a", "#2563eb");
+                fireToast("target", "ADHD Focus Mode activated", scores.adhd, "#1e3a8a", "#2563eb");
             }
             if (!latched.current.motor && scores.motor >= CFG.THRESHOLD.motor) {
                 latched.current.motor = true;
-                fireToast("🖱️", "Motor Assist Mode activated", scores.motor, "#7c2d12", "#c2410c");
+                fireToast("mouse", "Motor Assist Mode activated", scores.motor, "#7c2d12", "#c2410c");
             }
 
             const found = [];
@@ -431,9 +511,9 @@ function ASLGame() {
         setAnswered(newAnswered);
         if (val === correct) {
             setScore(s => s + 10);
-            setFeedback({ text: ["Great signing! 🤟", "You got it! 🌟", "Amazing! ✨"][Math.floor(Math.random() * 3)], type: "good" });
+            setFeedback({ text: ["Great signing!", "You got it!", "Amazing!"][Math.floor(Math.random() * 3)], type: "good" });
         } else {
-            setFeedback({ text: `It's "${correct}" — keep practicing! 💙`, type: "bad" });
+            setFeedback({ text: `It's "${correct}" — keep practicing!`, type: "bad" });
         }
         setTimeout(() => {
             setIdx(i => i + 1);
@@ -449,7 +529,7 @@ function ASLGame() {
         <div className="card asl" role="region" aria-label="ASL Fingerspelling Game">
             <CardStripe variant="asl" />
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "20px 22px 12px" }}>
-                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(56,189,248,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}>🤟</div>
+                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(56,189,248,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}><I icon={faHandPeace} color="#38bdf8" /></div>
                 <div>
                     <div className="card-title">ASL Fingerspelling</div>
                     <div className="card-desc">Learn hand signs for letters &amp; common words</div>
@@ -462,9 +542,9 @@ function ASLGame() {
                 </div>
                 <ProgressBar value={((idx % ASL_DATA.length) / 12) * 100} variant="asl" />
                 <div className="asl-stage">
-                    <span className="big-symbol" style={{ animation: bounce ? "bounceIn 0.5s ease" : "none" }} aria-live="polite">{data.hand}</span>
+                    <span className="big-symbol" style={{ animation: bounce ? "bounceIn 0.5s ease" : "none" }} aria-live="polite"><I icon={data.hand} color="#38bdf8" size="3rem" /></span>
                     <div className="q-label" style={{ color: "#38bdf8" }}>What does this hand sign represent?</div>
-                    <div className="hint-label">Hint: {data.word} {data.hint}</div>
+                    <div className="hint-label">Hint: {data.word} — <I icon={data.hintIcon} /> {data.hint}</div>
                 </div>
                 <div className="opts-grid" role="group" aria-label="Answer choices">
                     {opts.map(o => (
@@ -502,9 +582,9 @@ function EmotionGame() {
         setAnswered(newAnswered);
         if (val === correct) {
             setScore(s => s + 10);
-            setFeedback({ text: ["Yes, that's right! 💖", "Great understanding! 🌟", "You know feelings well! 🧠"][Math.floor(Math.random() * 3)], type: "good" });
+            setFeedback({ text: ["Yes, that's right!", "Great understanding!", "You know feelings well!"][Math.floor(Math.random() * 3)], type: "good" });
         } else {
-            setFeedback({ text: `The feeling is "${correct}" — that's okay! 💜`, type: "bad" });
+            setFeedback({ text: `The feeling is "${correct}" — that's okay!`, type: "bad" });
         }
         setTimeout(() => {
             const nextIdx = idx + 1;
@@ -522,7 +602,7 @@ function EmotionGame() {
         <div className="card emotion" role="region" aria-label="Emotion Recognition Game">
             <CardStripe variant="emotion" />
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "20px 22px 12px" }}>
-                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(244,114,182,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}>😊</div>
+                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(244,114,182,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}><I icon={faFaceSmileBeam} color="#f472b6" /></div>
                 <div>
                     <div className="card-title">How Am I Feeling?</div>
                     <div className="card-desc">Identify emotions from expressions &amp; situations</div>
@@ -535,7 +615,7 @@ function EmotionGame() {
                 </div>
                 <ProgressBar value={(score / Math.max(round * 10, 10)) * 100} variant="emotion" />
                 <div className="emotion-stage">
-                    <span className="big-symbol" style={{ animation: bounce ? "bounceIn 0.5s ease" : "none" }} aria-live="polite">{data.face}</span>
+                    <span className="big-symbol" style={{ animation: bounce ? "bounceIn 0.5s ease" : "none" }} aria-live="polite"><I icon={data.face} color={data.color} size="3rem" /></span>
                     <div className="q-label" style={{ color: "#f472b6" }}>{data.situation}</div>
                 </div>
                 <div className="opts-grid" role="group" aria-label="Emotion choices">
@@ -578,7 +658,7 @@ function MemoryGame() {
                 setPairs(newPairs);
                 setFlipped([]);
                 setBusy(false);
-                if (newPairs === 8) setFeedback({ text: "🎉 All pairs found! Amazing memory!", type: "good" });
+                if (newPairs === 8) setFeedback({ text: "All pairs found! Amazing memory!", type: "good" });
             } else {
                 setTimeout(() => {
                     setCards(c => c.map(card => (card.id === a.id || card.id === b.id) ? { ...card, flipped: false } : card));
@@ -593,7 +673,7 @@ function MemoryGame() {
         <div className="card memory" role="region" aria-label="Memory Match Game">
             <CardStripe variant="memory" />
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "20px 22px 12px" }}>
-                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(74,222,128,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}>🧠</div>
+                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(74,222,128,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}><I icon={faBrain} color="#4ade80" /></div>
                 <div>
                     <div className="card-title">Memory Match</div>
                     <div className="card-desc">Flip cards and find all pairs — builds focus!</div>
@@ -615,12 +695,12 @@ function MemoryGame() {
                             onClick={() => flip(card)}
                             onKeyPress={e => { if (e.key === "Enter" || e.key === " ") flip(card); }}
                         >
-                            {(card.flipped || card.matched) ? card.sym : ""}
+                            {(card.flipped || card.matched) ? <MemIcon name={card.sym} /> : ""}
                         </div>
                     ))}
                 </div>
                 <Feedback {...feedback} />
-                <button className="btn btn-green btn-full" onClick={reset} aria-label="New Game">🔄 New Game</button>
+                <button className="btn btn-green btn-full" onClick={reset} aria-label="New Game"><I icon={faArrowsRotate} /> New Game</button>
             </div>
         </div>
     );
@@ -651,9 +731,9 @@ function PatternGame() {
         setRevealed(correct);
         if (val === correct) {
             setScore(s => s + 10);
-            setFeedback({ text: "Pattern complete! 🎉", type: "good" });
+            setFeedback({ text: "Pattern complete!", type: "good" });
         } else {
-            setFeedback({ text: `Not quite! It was "${correct}" 🧡`, type: "bad" });
+            setFeedback({ text: `Not quite! It was the right one — keep going!`, type: "bad" });
         }
         setTimeout(() => {
             const nextIdx = idx + 1;
@@ -670,7 +750,7 @@ function PatternGame() {
         <div className="card pattern" role="region" aria-label="Pattern Completion Game">
             <CardStripe variant="pattern" />
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "20px 22px 12px" }}>
-                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(251,146,60,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}>🔷</div>
+                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(251,146,60,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}><I icon={faBullseye} color="#fb923c" /></div>
                 <div>
                     <div className="card-title">What Comes Next?</div>
                     <div className="card-desc">Complete the pattern — great for logic skills!</div>
@@ -685,15 +765,15 @@ function PatternGame() {
                 <div className="pattern-stage">
                     <div className="pattern-label">What comes next in the pattern?</div>
                     <div className="pattern-row">
-                        {data.seq.map((s, i) => <div key={i} className="pat-item">{s}</div>)}
+                        {data.seq.map((s, i) => <div key={i} className="pat-item"><PatIcon name={s} /></div>)}
                         <div className="pat-item" style={revealed ? { background: "rgba(74,222,128,0.2)", border: "2px solid #4ade80", fontSize: "1.5rem" } : {}}>
-                            {revealed || ""}
+                            {revealed ? <PatIcon name={revealed} /> : ""}
                         </div>
                     </div>
                 </div>
                 <div className="opts-grid3" role="group" aria-label="Pattern answer choices">
                     {opts.map(o => (
-                        <button key={o} className={`opt${answered[o] ? " " + answered[o] : ""}`} style={{ fontSize: "1.5rem" }} onClick={() => check(o)}>{o}</button>
+                        <button key={o} className={`opt${answered[o] ? " " + answered[o] : ""}`} style={{ fontSize: "1.5rem" }} onClick={() => check(o)}><PatIcon name={o} /></button>
                     ))}
                 </div>
                 <Feedback {...feedback} />
@@ -705,10 +785,10 @@ function PatternGame() {
 /* ── Simon Says ── */
 function SimonGame() {
     const BUTTONS = [
-        { i: 0, emoji: "⭐", label: "Blue star", bg: "rgba(56,189,248,0.12)", border: "rgba(56,189,248,0.2)", litBg: "rgba(56,189,248,0.5)", litBorder: "#38bdf8" },
-        { i: 1, emoji: "💖", label: "Pink heart", bg: "rgba(244,114,182,0.12)", border: "rgba(244,114,182,0.2)", litBg: "rgba(244,114,182,0.5)", litBorder: "#f472b6" },
-        { i: 2, emoji: "🍀", label: "Green leaf", bg: "rgba(74,222,128,0.12)", border: "rgba(74,222,128,0.2)", litBg: "rgba(74,222,128,0.5)", litBorder: "#4ade80" },
-        { i: 3, emoji: "☀️", label: "Yellow sun", bg: "rgba(250,204,21,0.12)", border: "rgba(250,204,21,0.2)", litBg: "rgba(250,204,21,0.5)", litBorder: "#facc15" },
+        { i: 0, icon: faStar, label: "Blue star", bg: "rgba(56,189,248,0.12)", border: "rgba(56,189,248,0.2)", litBg: "rgba(56,189,248,0.5)", litBorder: "#38bdf8" },
+        { i: 1, icon: faHeart, label: "Pink heart", bg: "rgba(244,114,182,0.12)", border: "rgba(244,114,182,0.2)", litBg: "rgba(244,114,182,0.5)", litBorder: "#f472b6" },
+        { i: 2, icon: faClover, label: "Green leaf", bg: "rgba(74,222,128,0.12)", border: "rgba(74,222,128,0.2)", litBg: "rgba(74,222,128,0.5)", litBorder: "#4ade80" },
+        { i: 3, icon: faSun, label: "Yellow sun", bg: "rgba(250,204,21,0.12)", border: "rgba(250,204,21,0.2)", litBg: "rgba(250,204,21,0.5)", litBorder: "#facc15" },
     ];
 
     const [seq, setSeq] = useState([]);
@@ -756,14 +836,14 @@ function SimonGame() {
         if (newInput[pos] !== seq[pos]) {
             setPlaying(false);
             const score = seq.length - 1;
-            setFeedback({ text: `Oops! You got ${score} steps! Try again! 💜`, type: "bad" });
+            setFeedback({ text: `Oops! You got ${score} steps! Try again!`, type: "bad" });
             setStatus("Press START to play again!");
             setBest(b => Math.max(b, score));
             return;
         }
         if (newInput.length === seq.length) {
             setPlaying(false);
-            setFeedback({ text: `Perfect! Level ${seq.length} ✅`, type: "good" });
+            setFeedback({ text: `Perfect! Level ${seq.length}!`, type: "good" });
             setBest(b => Math.max(b, seq.length));
             setTimeout(() => addStep(seq), 1200);
         }
@@ -773,7 +853,7 @@ function SimonGame() {
         <div className="card sequence" role="region" aria-label="Simon Says Sequence Game">
             <CardStripe variant="sequence" />
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "20px 22px 12px" }}>
-                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(167,139,250,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}>🎯</div>
+                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(167,139,250,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}><I icon={faBullseye} color="#a78bfa" /></div>
                 <div>
                     <div className="card-title">Follow the Sequence</div>
                     <div className="card-desc">Watch, remember &amp; repeat! Builds working memory</div>
@@ -804,13 +884,13 @@ function SimonGame() {
                                     borderColor: (isLit || isPressed) ? btn.litBorder : btn.border,
                                     transform: isLit ? "scale(1.08)" : "scale(1)",
                                 }}
-                            >{btn.emoji}</div>
+                            ><I icon={btn.icon} /></div>
                         );
                     })}
                 </div>
                 <Feedback {...feedback} />
                 <button className="btn btn-violet btn-full" onClick={start}>
-                    {started ? "🔄 Restart" : "▶ Start Game"}
+                    {started ? <><I icon={faArrowsRotate} /> Restart</> : <><I icon={faPlay} /> Start Game</>}
                 </button>
             </div>
         </div>
@@ -820,7 +900,7 @@ function SimonGame() {
 /* ── AI Tutor ── */
 function AiTutorGame() {
     const [messages, setMessages] = useState([
-        { role: "ai", text: "Hi there! 👋 I'm your helper! I can teach you sign language, talk about feelings, explain patterns, or just have fun chatting. What would you like to learn today? 🌈" }
+        { role: "ai", text: "Hi there! I'm your helper! I can teach you sign language, talk about feelings, explain patterns, or just have fun chatting. What would you like to learn today?" }
     ]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
@@ -849,31 +929,31 @@ function AiTutorGame() {
                 body: JSON.stringify({
                     model: "claude-sonnet-4-20250514",
                     max_tokens: 1000,
-                    system: `You are a warm, patient, inclusive AI tutor for children with special needs (ages 5–14). This includes children who are deaf/hard of hearing, have autism spectrum disorder, learning disabilities, ADHD, or other differences.\n\nYour guidelines:\n- Use SHORT, CLEAR sentences. No more than 2 sentences per paragraph.\n- Be extremely patient, encouraging, and positive. Never make the child feel bad.\n- Use lots of emojis to make communication fun and visual 🌈⭐💜\n- If asked about ASL (American Sign Language), describe the hand shape and movement simply.\n- If asked about emotions/feelings, validate them and give simple strategies to cope.\n- For memory/focus tips, give concrete, easy-to-follow advice.\n- Offer breathing exercises or calming techniques when appropriate.\n- Avoid complex words. Prefer simple vocabulary.\n- Always end with encouragement or a gentle question to keep them engaged.\n- You are NEVER impatient, NEVER dismissive. Every question is valid.`,
+                    system: `You are a warm, patient, inclusive AI tutor for children with special needs (ages 5–14). This includes children who are deaf/hard of hearing, have autism spectrum disorder, learning disabilities, ADHD, or other differences.\n\nYour guidelines:\n- Use SHORT, CLEAR sentences. No more than 2 sentences per paragraph.\n- Be extremely patient, encouraging, and positive. Never make the child feel bad.\n- Use clear, descriptive language to make communication fun and visual.\n- If asked about ASL (American Sign Language), describe the hand shape and movement simply.\n- If asked about emotions/feelings, validate them and give simple strategies to cope.\n- For memory/focus tips, give concrete, easy-to-follow advice.\n- Offer breathing exercises or calming techniques when appropriate.\n- Avoid complex words. Prefer simple vocabulary.\n- Always end with encouragement or a gentle question to keep them engaged.\n- You are NEVER impatient, NEVER dismissive. Every question is valid.`,
                     messages: history,
                 }),
             });
             const data = await res.json();
-            const reply = data.content?.[0]?.text || "I had a little trouble! Can you try again? 😊";
+            const reply = data.content?.[0]?.text || "I had a little trouble! Can you try again?";
             setMessages(prev => [...prev, { role: "ai", text: reply }]);
         } catch {
-            setMessages(prev => [...prev, { role: "ai", text: "Oops! Something went wrong. Please try again! 🙏" }]);
+            setMessages(prev => [...prev, { role: "ai", text: "Oops! Something went wrong. Please try again!" }]);
         }
         setLoading(false);
     };
 
     const quickPrompts = [
-        { label: "🤟 ASL A–E", q: "Teach me the ASL alphabet A to E!" },
-        { label: "😰 Anxious?", q: "What does feeling anxious mean? Explain simply." },
-        { label: "🧠 Memory tip", q: "Can you give me a fun memory trick?" },
-        { label: "🌬️ Calm down", q: "What is a good breathing exercise to feel calm?" },
+        { label: "ASL A–E", icon: faHandPeace, q: "Teach me the ASL alphabet A to E!" },
+        { label: "Anxious?", icon: faFaceFlushed, q: "What does feeling anxious mean? Explain simply." },
+        { label: "Memory tip", icon: faBrain, q: "Can you give me a fun memory trick?" },
+        { label: "Calm down", icon: faFeather, q: "What is a good breathing exercise to feel calm?" },
     ];
 
     return (
         <div className="card ai-tutor" role="region" aria-label="AI Inclusive Tutor">
             <CardStripe variant="ai-tutor" />
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "20px 22px 12px" }}>
-                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(250,204,21,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}>🤖</div>
+                <div style={{ width: 50, height: 50, borderRadius: 14, background: "rgba(250,204,21,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.7rem", flexShrink: 0 }}><I icon={faRobot} color="#facc15" /></div>
                 <div>
                     <div className="card-title">My AI Helper</div>
                     <div className="card-desc">Ask anything — your patient, kind AI tutor</div>
@@ -884,7 +964,7 @@ function AiTutorGame() {
                     {messages.map((m, i) => (
                         <div key={i} className={`msg ${m.role}`}>{m.text}</div>
                     ))}
-                    {loading && <div className="msg load">Thinking… 🤔</div>}
+                    {loading && <div className="msg load">Thinking… <I icon={faBrain} /></div>}
                 </div>
                 <div className="chat-input-row">
                     <input
@@ -899,7 +979,7 @@ function AiTutorGame() {
                 </div>
                 <div className="quick-prompts" role="group" aria-label="Quick questions">
                     {quickPrompts.map(p => (
-                        <button key={p.q} className="qp" onClick={() => send(p.q)}>{p.label}</button>
+                        <button key={p.q} className="qp" onClick={() => send(p.q)}><I icon={p.icon} /> {p.label}</button>
                     ))}
                 </div>
             </div>
@@ -913,12 +993,12 @@ function AiTutorGame() {
 
 function Sidebar({ open, onClose, settings, toggle, setTextSize, aiStatus, aiActive }) {
     const tools = [
-        { key: "dyslexia", icon: "📖", label: "Dyslexia Font" },
-        { key: "focus", icon: "🧠", label: "ADHD Focus" },
-        { key: "contrast", icon: "🌗", label: "High Contrast" },
-        { key: "dark", icon: "🌙", label: "Deep Dark" },
-        { key: "overlay", icon: "🟡", label: "Color Overlay" },
-        { key: "motor", icon: "🖱️", label: "Motor Assist" },
+        { key: "dyslexia", icon: faBookOpen, label: "Dyslexia Font" },
+        { key: "focus", icon: faBrain, label: "ADHD Focus" },
+        { key: "contrast", icon: faMoon, label: "High Contrast" },
+        { key: "dark", icon: faMoon, label: "Deep Dark" },
+        { key: "overlay", icon: faCircle, label: "Color Overlay" },
+        { key: "motor", icon: faMouse, label: "Motor Assist" },
     ];
 
     const [speaking, setSpeaking] = useState(false);
@@ -947,11 +1027,11 @@ function Sidebar({ open, onClose, settings, toggle, setTextSize, aiStatus, aiAct
             <div id="sidebar" className={open ? "open" : ""} role="complementary" aria-label="Accessibility Sidebar">
                 <div className="sidebarHeader">
                     <h2>Accessibility Hub</h2>
-                    <button id="closeBtn" aria-label="Close sidebar" onClick={onClose}>✖</button>
+                    <button id="closeBtn" aria-label="Close sidebar" onClick={onClose}><I icon={faCircleXmark} /></button>
                 </div>
 
                 <div className="aiBadgeWrap">
-                    <h4>🤖 AI Behaviour Engine</h4>
+                    <h4><I icon={faRobot} /> AI Behaviour Engine</h4>
                     <div id="aiBadge" className={aiActive ? "active" : ""}>
                         <span>{aiStatus}</span>
                     </div>
@@ -959,7 +1039,7 @@ function Sidebar({ open, onClose, settings, toggle, setTextSize, aiStatus, aiAct
 
                 {tools.map(t => (
                     <div key={t.key} className="tool">
-                        <span>{t.icon} {t.label}</span>
+                        <span><I icon={t.icon} /> {t.label}</span>
                         <label className="switch" aria-label={`Toggle ${t.label}`}>
                             <input type="checkbox" checked={settings[t.key]} onChange={() => toggle(t.key)} />
                             <span className="slider"></span>
@@ -970,7 +1050,7 @@ function Sidebar({ open, onClose, settings, toggle, setTextSize, aiStatus, aiAct
                 <hr className="side-divider" />
 
                 <div className="tool">
-                    <span>🔊 Narrator</span>
+                    <span><I icon={faVolumeHigh} /> Narrator</span>
                     <button className="narratorBtn" onClick={toggleNarrator}>{speaking ? "Stop" : "Start"}</button>
                 </div>
 
@@ -1169,15 +1249,15 @@ export default function InclusiveLearnApp() {
 
             {/* Sparkles */}
             {[
-                { left: "3%", dur: "18s", delay: "0s", sym: "🌟" },
-                { left: "12%", dur: "22s", delay: "4s", sym: "✨" },
-                { left: "28%", dur: "16s", delay: "8s", sym: "💫" },
-                { left: "50%", dur: "20s", delay: "2s", sym: "⭐" },
-                { left: "68%", dur: "25s", delay: "6s", sym: "🌙" },
-                { left: "82%", dur: "14s", delay: "1s", sym: "✦" },
-                { left: "94%", dur: "19s", delay: "9s", sym: "💜" },
+                { left: "3%", dur: "18s", delay: "0s", icon: faStar, color: "#eab308" },
+                { left: "12%", dur: "22s", delay: "4s", icon: faWandMagicSparkles, color: "#a78bfa" },
+                { left: "28%", dur: "16s", delay: "8s", icon: faGem, color: "#c084fc" },
+                { left: "50%", dur: "20s", delay: "2s", icon: faStar, color: "#facc15" },
+                { left: "68%", dur: "25s", delay: "6s", icon: faMoon, color: "#a78bfa" },
+                { left: "82%", dur: "14s", delay: "1s", icon: faGem, color: "#38bdf8" },
+                { left: "94%", dur: "19s", delay: "9s", icon: faHeart, color: "#a855f7" },
             ].map((s, i) => (
-                <div key={i} className="sp" style={{ left: s.left, animationDuration: s.dur, animationDelay: s.delay }}>{s.sym}</div>
+                <div key={i} className="sp" style={{ left: s.left, animationDuration: s.dur, animationDelay: s.delay }}><I icon={s.icon} color={s.color} /></div>
             ))}
 
             {/* Header */}
@@ -1203,7 +1283,7 @@ export default function InclusiveLearnApp() {
                     }}>InclusiveLearn</span>
                 </div>
                 <span style={{ fontSize: "0.78rem", color: "#7a86a8", fontWeight: 700, letterSpacing: "0.5px" }}>
-                    🌈 ASL · Emotions · Memory · Patterns · Sequences · AI Tutor
+                    <I icon={faRainbow} /> ASL · Emotions · Memory · Patterns · Sequences · AI Tutor
                 </span>
             </header>
 
@@ -1218,7 +1298,7 @@ export default function InclusiveLearnApp() {
             </div>
 
             {/* Sidebar trigger */}
-            <button id="toolBtn" aria-label="Open Accessibility Settings" onClick={() => setSidebarOpen(true)}>⚙</button>
+            <button id="toolBtn" aria-label="Open Accessibility Settings" onClick={() => setSidebarOpen(true)}><I icon={faGear} /></button>
 
             {/* Sidebar */}
             <Sidebar

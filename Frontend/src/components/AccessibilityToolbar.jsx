@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useAccessibility } from "../context/AccessibilityContext";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMoon, faSquare, faBookOpen, faBullseye, faLightbulb, faXmark, faUniversalAccess } from '@fortawesome/free-solid-svg-icons';
 
 function ToggleSwitch({ label, icon, value, onChange, description }) {
   return (
@@ -96,7 +98,7 @@ function AccessibilityToolbar() {
               padding: "4px"
             }}
           >
-            ✕
+            <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>
 
@@ -106,7 +108,7 @@ function AccessibilityToolbar() {
 
         <ToggleSwitch
           label="Dark Mode"
-          icon="🌙"
+          icon={<FontAwesomeIcon icon={faMoon} />}
           value={darkMode}
           onChange={setDarkMode}
           description="Easier on the eyes in low light"
@@ -122,7 +124,7 @@ function AccessibilityToolbar() {
 
         <ToggleSwitch
           label="Dyslexia Font"
-          icon="📖"
+          icon={<FontAwesomeIcon icon={faBookOpen} />}
           value={dyslexiaFont}
           onChange={setDyslexiaFont}
           description="Lexend font — easier to read"
@@ -130,7 +132,7 @@ function AccessibilityToolbar() {
 
         <ToggleSwitch
           label="ADHD Focus Mode"
-          icon="🎯"
+          icon={<FontAwesomeIcon icon={faBullseye} />}
           value={adhdFocus}
           onChange={setAdhdFocus}
           description="Blurs everything except where you hover"
@@ -145,7 +147,7 @@ function AccessibilityToolbar() {
           color: "#7a5c4a",
           lineHeight: "1.6"
         }}>
-          💡 These settings are automatically saved during your test session.
+          <FontAwesomeIcon icon={faLightbulb} className="mr-1" /> These settings are automatically saved during your test session.
         </div>
       </div>
 

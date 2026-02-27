@@ -1,4 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCamera, faSpinner, faBrain } from "@fortawesome/free-solid-svg-icons";
 import { useBehaviorLogger } from "../hooks/useBehaviorLogger";
 import { useInactivityTracking } from "../hooks/useInactivityTracking";
 import { useGazeTracking } from "../hooks/useGazeTracking";
@@ -94,7 +96,7 @@ function BehaviorTracker({ studentId, sessionId, onTimerAdjustment, onTrackerRea
         textAlign: "center",
         transition: "background 0.3s"
       }}>
-        {isReady ? "📷 Tracking Active" : "⏳ Loading Tracker..."}
+        {isReady ? <><FontAwesomeIcon icon={faCamera} /> Tracking Active</> : <><FontAwesomeIcon icon={faSpinner} spin /> Loading Tracker...</>}
       </div>
       <div style={{ position: "relative", width: 160, height: 120 }}>
         <video
@@ -122,7 +124,7 @@ function BehaviorTracker({ studentId, sessionId, onTimerAdjustment, onTrackerRea
             padding: "8px",
             gap: "8px"
           }}>
-            <div style={{ fontSize: "1.5rem" }}>🧠</div>
+            <div style={{ fontSize: "1.5rem" }}><FontAwesomeIcon icon={faBrain} /></div>
             <div>Loading AI model...</div>
             <div style={{ fontSize: "0.65rem", opacity: 0.8 }}>This may take a few seconds</div>
           </div>
