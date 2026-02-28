@@ -9,7 +9,7 @@ import Timer from '../components/Timer';
 import ProgressBar from '../components/ProgressBar';
 import BehaviorTracker from '../components/BehaviorTracker';
 import ActionFeedPanel from '../components/ActionFeedPanel';
-import useBehaviourAI from '../hooks/useBehaviourAI';
+import useBehaviourAI from '../hooks/useBehaviourAi';
 import BehaviourInsightPanel from '../components/mentalheath/BehaviourInsightPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
