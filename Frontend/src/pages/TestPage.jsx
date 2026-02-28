@@ -9,7 +9,7 @@ import Timer from '../components/Timer';
 import ProgressBar from '../components/ProgressBar';
 import BehaviorTracker from '../components/BehaviorTracker';
 import ActionFeedPanel from '../components/ActionFeedPanel';
-import useBehaviourAI from '../hooks/useBehaviourAi';
+import useBehaviourAi from '../hooks/useBehaviourAi';
 import BehaviourInsightPanel from '../components/mentalheath/BehaviourInsightPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -48,7 +48,7 @@ export default function TestPage() {
   const { addAction, Panel: actionPanel } = ActionFeedPanel();
 
   // AIML behaviour tracking
-  const { getScores, latched } = useBehaviourAI() || {};
+  const { getScores, latched } = useBehaviourAi() || {};
   const scores = getScores ? getScores() : null;
 
   const handleAdhdDetected = useCallback(() => {
