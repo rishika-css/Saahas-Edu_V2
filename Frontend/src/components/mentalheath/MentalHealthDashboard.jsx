@@ -5,6 +5,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useBehaviourAI from "../../hooks/useBehaviourAI";
+import { useAuth } from "../../context/AuthContext";
+import { moodAPI, dashboardAPI } from "../../services/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFaceSmileBeam, faFaceSmile, faFaceMeh, faFaceFrown, faFaceSadTear,
@@ -39,6 +41,9 @@ const QUOTES = [
 
 export default function MentalHealthDashboard() {
 
+  /* AUTH */
+  const { user } = useAuth();
+
   /* NAVIGATION */
   const navigate = useNavigate();
 
@@ -51,7 +56,8 @@ export default function MentalHealthDashboard() {
   /* Mood State */
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodSubmitted, setMoodSubmitted] = useState(false);
-  const [streak, setStreak] = useState(5);
+  const [streak, setStreak] = useState(0);
+  const [moodLoading, setMoodLoading] = useState(false);
 
   /* Quotes */
   const [quoteIdx, setQuoteIdx] = useState(0);
@@ -64,9 +70,31 @@ export default function MentalHealthDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleMoodSubmit = () => {
-    setMoodSubmitted(true);
-    setStreak((s) => s + 1);
+  // Fetch real streak from backend
+  useEffect(() => {
+    dashboardAPI.getStats()
+      .then(data => setStreak(data.streak || 0))
+      .catch(() => { });
+  }, []);
+
+  const handleMoodSubmit = async () => {
+    if (!selectedMood) return;
+    setMoodLoading(true);
+    const moodObj = MOODS.find(m => m.value === selectedMood);
+    try {
+      await moodAPI.log({ mood: selectedMood, label: moodObj?.label || "Okay" });
+      setMoodSubmitted(true);
+      // Refresh streak
+      dashboardAPI.getStats()
+        .then(data => setStreak(data.streak || 0))
+        .catch(() => { });
+    } catch (err) {
+      console.warn("Failed to log mood:", err.message);
+      // Still show success locally so the user isn't blocked
+      setMoodSubmitted(true);
+    } finally {
+      setMoodLoading(false);
+    }
   };
 
   /* AI DETECTION SUMMARY */
@@ -183,9 +211,10 @@ export default function MentalHealthDashboard() {
 
               <button
                 onClick={handleMoodSubmit}
+                disabled={moodLoading}
                 className="px-6 py-2 rounded-xl bg-purple-500 text-white font-bold"
               >
-                Log Mood <FontAwesomeIcon icon={faWandMagicSparkles} className="ml-1" />
+                {moodLoading ? "Logging..." : <>Log Mood <FontAwesomeIcon icon={faWandMagicSparkles} className="ml-1" /></>}
               </button>
 
             </div>

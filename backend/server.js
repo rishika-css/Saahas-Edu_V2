@@ -16,6 +16,8 @@ import testRoutes from "./routes/tests.js";
 import userRoutes from "./routes/userRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import studentRoutes from "./routes/students.js";
+import moodRoutes from "./routes/moodRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 dotenv.config();
 
@@ -34,6 +36,8 @@ app.use('/api/courses', courseRoutes);
 app.use("/api/behavior", behaviorRoutes);
 app.use("/api/tests", testRoutes);
 app.use("/api/students", studentRoutes);
+app.use("/api/mood", moodRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)

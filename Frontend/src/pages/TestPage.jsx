@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAccessibility } from '../context/AccessibilityContext';
 import { testsAPI } from '../services/api';
+import { getRandomQuestions } from '../data/questions';
 import QuestionCard from '../components/QuestionCard';
 import Timer from '../components/Timer';
 import ProgressBar from '../components/ProgressBar';
@@ -26,18 +27,19 @@ export default function TestPage() {
   const navigate = useNavigate();
 
   const [stage, setStage] = useState('loading'); // loading | active | result | error
-  const [sessionId, setSessionId] = useState(null);
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [totalQuestions, setTotalQuestions] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [answers, setAnswers] = useState([]); // { questionId, selected, isCorrect, timeSpent }
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
+  const TIME_ALLOTED = 600; // seconds
+
   // Tracker-ready gating
   const [trackerReady, setTrackerReady] = useState(false);
-  const apiDataRef = useRef(null); // stores API response until tracker is ready
+  const questionsReady = useRef(false);
 
   // ADHD detection
   const [showAdhdModal, setShowAdhdModal] = useState(false);
@@ -58,39 +60,35 @@ export default function TestPage() {
 
   useAdhdMouseDetection(handleAdhdDetected, stage === 'active' && !adhdDismissed);
 
-  // ── Start test API call on mount ──
+  // ── Load local questions on mount ──
   useEffect(() => {
     if (!user) return;
-    const studentId = user.id || user._id;
-    testsAPI.start(studentId)
-      .then((data) => {
-        apiDataRef.current = data;
-        // If tracker is already ready, transition immediately
-        if (trackerReady) {
-          applyApiData(data);
-        }
-      })
-      .catch((err) => {
-        setError(err.message || 'Failed to start test');
+    try {
+      const qs = getRandomQuestions(10);
+      if (qs.length === 0) {
+        setError('No questions available');
         setStage('error');
-      });
+        return;
+      }
+      setQuestions(qs);
+      setTimeRemaining(TIME_ALLOTED);
+      questionsReady.current = true;
+      // If tracker is already ready, go active immediately
+      if (trackerReady) {
+        setStage('active');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to load questions');
+      setStage('error');
+    }
   }, [user]);
 
-  // ── When tracker becomes ready, start the test if API data is available ──
+  // ── When tracker becomes ready, start if questions are loaded ──
   useEffect(() => {
-    if (trackerReady && apiDataRef.current && stage === 'loading') {
-      applyApiData(apiDataRef.current);
+    if (trackerReady && questionsReady.current && stage === 'loading') {
+      setStage('active');
     }
   }, [trackerReady, stage]);
-
-  function applyApiData(data) {
-    setSessionId(data.sessionId);
-    setTotalQuestions(data.totalQuestions);
-    setTimeRemaining(data.timeAlloted);
-    setCurrentQuestion(data.firstQuestion);
-    setCurrentIndex(0);
-    setStage('active');
-  }
 
   const handleTrackerReady = useCallback(() => {
     setTrackerReady(true);
@@ -101,53 +99,77 @@ export default function TestPage() {
     addAction(type, detail);
   }, [addAction]);
 
-  const handleAnswer = async (option) => {
+  const currentQuestion = questions[currentIndex] || null;
+
+  const handleAnswer = (option) => {
     setSelectedAnswer(option);
     if (window.__logRapidSkip) window.__logRapidSkip();
 
-    try {
-      await testsAPI.answer({
-        sessionId,
-        questionId: currentQuestion._id,
-        selected: option,
-        timeSpent: 5,
-      });
-    } catch (err) {
-      console.warn('Answer submission failed:', err.message);
-    }
+    const isCorrect = option === currentQuestion?.answer;
+
+    // Record answer locally
+    setAnswers((prev) => {
+      const existing = prev.findIndex((a) => a.questionId === currentQuestion._id);
+      const entry = { questionId: currentQuestion._id, selected: option, isCorrect, timeSpent: 5 };
+      if (existing >= 0) {
+        const updated = [...prev];
+        updated[existing] = entry;
+        return updated;
+      }
+      return [...prev, entry];
+    });
   };
 
-  const handleNext = async () => {
+  const handleNext = () => {
     const nextIdx = currentIndex + 1;
-    if (nextIdx >= totalQuestions) {
+    if (nextIdx >= questions.length) {
       handleSubmit();
       return;
     }
-    try {
-      const data = await testsAPI.nextQuestion(sessionId, nextIdx);
-      if (data.done) {
-        handleSubmit();
-        return;
-      }
-      setCurrentQuestion(data.question);
-      setCurrentIndex(data.questionIndex);
-      setSelectedAnswer(null);
-      if (data.timeRemaining !== undefined) {
-        setTimeRemaining(data.timeRemaining);
-      }
-    } catch (err) {
-      console.warn('Next question failed:', err.message);
-    }
+    setCurrentIndex(nextIdx);
+    setSelectedAnswer(null);
   };
 
   const handleSubmit = async () => {
+    // Calculate results locally
+    const correct = answers.filter((a) => a.isCorrect).length;
+    const total = questions.length;
+    const score = Math.round((correct / total) * 100);
+
+    const questionResults = questions.map((q) => {
+      const ans = answers.find((a) => a.questionId === q._id);
+      return {
+        question: q.content,
+        options: q.options,
+        correct: q.answer,
+        selected: ans ? ans.selected : "Not answered",
+        isCorrect: ans ? ans.isCorrect : false,
+        timeSpent: ans ? ans.timeSpent : 0,
+      };
+    });
+
+    const resultData = {
+      score,
+      correct,
+      total,
+      results: questionResults,
+      behaviorSummary: null, // behavior is tracked separately
+    };
+
+    setResult(resultData);
+    setStage('result');
+
+    // Save score to DB for dashboard stats (fire-and-forget)
     try {
-      const data = await testsAPI.submit(sessionId);
-      setResult(data);
-      setStage('result');
+      await testsAPI.saveResult({
+        score,
+        correct,
+        total,
+        timeAlloted: TIME_ALLOTED,
+        timeRemaining,
+      });
     } catch (err) {
-      setError(err.message || 'Failed to submit test');
-      setStage('error');
+      console.warn('Could not save test result to DB:', err.message);
     }
   };
 
@@ -251,33 +273,6 @@ export default function TestPage() {
             You got {result.correct} out of {result.total} correct
           </p>
 
-          {/* Behavior summary */}
-          {result.behaviorSummary && (
-            <div style={{
-              background: '#fff8f0', borderRadius: '12px', padding: '16px',
-              marginBottom: '24px', textAlign: 'left',
-              border: '1px solid #f0ddd0',
-            }}>
-              <p style={{ fontWeight: 700, color: '#d9623f', marginBottom: '8px' }}>
-                <FontAwesomeIcon icon={faBrain} className="mr-1" /> Behavior Analysis
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem', color: '#7a5c4a' }}>
-                {result.behaviorSummary.idleCount > 0 && (
-                  <span><FontAwesomeIcon icon={faMoon} className="mr-1" /> Idle moments: {result.behaviorSummary.idleCount}</span>
-                )}
-                {result.behaviorSummary.gazeAwayCount > 0 && (
-                  <span><FontAwesomeIcon icon={faEye} className="mr-1" /> Gaze away: {result.behaviorSummary.gazeAwayCount}</span>
-                )}
-                {result.behaviorSummary.tabSwitchCount > 0 && (
-                  <span><FontAwesomeIcon icon={faShuffle} className="mr-1" /> Tab switches: {result.behaviorSummary.tabSwitchCount}</span>
-                )}
-                {result.behaviorSummary.timerAdjustments > 0 && (
-                  <span><FontAwesomeIcon icon={faClock} className="mr-1" /> Time extensions: {result.behaviorSummary.timerAdjustments}</span>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Question review */}
           <div style={{ textAlign: 'left' }}>
             {result.results?.map((r, i) => (
@@ -340,7 +335,7 @@ export default function TestPage() {
         </div>
 
         {/* Progress */}
-        <ProgressBar current={currentIndex + 1} total={totalQuestions} />
+        <ProgressBar current={currentIndex + 1} total={questions.length} />
 
         {/* Main content — question + side panels */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20, marginTop: 20 }}>
@@ -381,7 +376,7 @@ export default function TestPage() {
                   opacity: selectedAnswer ? 1 : 0.6,
                 }}
               >
-                {currentIndex + 1 >= totalQuestions ? 'Finish' : 'Next →'}
+                {currentIndex + 1 >= questions.length ? 'Finish' : 'Next →'}
               </button>
             </div>
           </div>
@@ -419,10 +414,10 @@ export default function TestPage() {
       )}
 
       {/* Behavior tracker (camera + AI gaze monitoring) */}
-      {sessionId && user && (
+      {user && (
         <BehaviorTracker
           studentId={user.id || user._id}
-          sessionId={sessionId}
+          sessionId="local-test"
           onTimerAdjustment={handleTimerAdjustment}
           onTrackerReady={handleTrackerReady}
           onAction={handleAction}

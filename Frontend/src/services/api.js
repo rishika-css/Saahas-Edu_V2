@@ -73,6 +73,12 @@ export const testsAPI = {
       method: 'POST',
       body: JSON.stringify({ sessionId }),
     }),
+
+  saveResult: (data) =>
+    request('/tests/save-result', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 export const behaviorAPI = {
@@ -81,4 +87,18 @@ export const behaviorAPI = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+};
+
+export const moodAPI = {
+  log: (moodData) =>
+    request('/mood', {
+      method: 'POST',
+      body: JSON.stringify(moodData),
+    }),
+
+  history: () => request('/mood/history'),
+};
+
+export const dashboardAPI = {
+  getStats: () => request('/dashboard/stats'),
 };

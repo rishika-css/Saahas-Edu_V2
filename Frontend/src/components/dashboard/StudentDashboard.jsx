@@ -3,7 +3,7 @@ import StatsWidget from './StatsWidget';
 import ProgressCard from './ProgressCard';
 import ActivityFeed from './ActivityFeed';
 import Card from '../common/Card';
-import { coursesAPI } from '../../services/api';
+import { coursesAPI, dashboardAPI } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBook, faFire, faBullseye, faClock, faClipboardList, faRocket, faInbox } from '@fortawesome/free-solid-svg-icons';
@@ -12,6 +12,8 @@ export default function StudentDashboard({ user }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [stats, setStats] = useState({ streak: 0, quizAvg: 0, hoursLearned: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,7 +21,14 @@ export default function StudentDashboard({ user }) {
       .then(data => setCourses(data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+
+    dashboardAPI.getStats()
+      .then(data => setStats(data))
+      .catch(err => console.warn('Failed to load stats:', err.message))
+      .finally(() => setStatsLoading(false));
   }, []);
+
+  const statsDisplay = statsLoading ? '...' : null;
 
   return (
     <div className="space-y-6">
@@ -31,9 +40,9 @@ export default function StudentDashboard({ user }) {
           icon={<FontAwesomeIcon icon={faBook} />}
           color="purple"
         />
-        <StatsWidget label="Current Streak" value="7d" icon={<FontAwesomeIcon icon={faFire} />} color="orange" />
-        <StatsWidget label="Quiz Score Avg" value="82%" icon={<FontAwesomeIcon icon={faBullseye} />} color="blue" />
-        <StatsWidget label="Hours Learned" value="34" icon={<FontAwesomeIcon icon={faClock} />} color="green" />
+        <StatsWidget label="Current Streak" value={statsDisplay ?? `${stats.streak}d`} icon={<FontAwesomeIcon icon={faFire} />} color="orange" />
+        <StatsWidget label="Quiz Score Avg" value={statsDisplay ?? `${stats.quizAvg}%`} icon={<FontAwesomeIcon icon={faBullseye} />} color="blue" />
+        <StatsWidget label="Hours Learned" value={statsDisplay ?? stats.hoursLearned} icon={<FontAwesomeIcon icon={faClock} />} color="green" />
       </div>
       {/* Give Test Banner */}
       <Card>
@@ -92,7 +101,7 @@ export default function StudentDashboard({ user }) {
       )}
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Courses from real API */}
+        {/* Courses from real API — limited to 3 */}
         <Card>
           <h3 className="font-semibold text-white/80 mb-4">Available Courses</h3>
 
@@ -121,7 +130,7 @@ export default function StudentDashboard({ user }) {
           )}
 
           <div className="space-y-3">
-            {courses.map(course => (
+            {courses.slice(0, 3).map(course => (
               <div
                 key={course._id}
                 className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-purple-500/10 transition"
