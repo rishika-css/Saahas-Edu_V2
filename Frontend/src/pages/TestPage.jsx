@@ -13,7 +13,6 @@ import useBehaviourAI from '../hooks/useBehaviourAI';
 import BehaviourInsightPanel from '../components/mentalheath/BehaviourInsightPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faBrain, faMoon, faEye, faShuffle, faClock,
   faHourglassHalf, faFrown, faTrophy, faHandsClapping,
   faDumbbell, faClipboardList, faCheck, faTimes
 } from '@fortawesome/free-solid-svg-icons';
