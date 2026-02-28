@@ -1161,55 +1161,6 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 .qp:hover{background:rgba(250,204,21,0.2)}
 .sp{position:fixed;pointer-events:none;z-index:0;font-size:1.2rem;opacity:0.1;animation:floatUp linear infinite}
 @keyframes floatUp{0%{transform:translateY(105vh) rotate(0deg);opacity:0}10%{opacity:0.1}90%{opacity:0.08}100%{transform:translateY(-10vh) rotate(360deg);opacity:0}}
-#toolBtn{position:fixed;right:0;top:50%;background:linear-gradient(135deg,#2f6fff,#7ea6ff);color:white;padding:18px;border:none;border-radius:12px 0 0 12px;cursor:pointer;z-index:999;font-size:1.2rem;box-shadow:-4px 0 20px rgba(47,111,255,0.4);transition:0.2s;transform:translateY(-50%)}
-#toolBtn:hover{padding-right:24px}
-#sideOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:998;backdrop-filter:blur(3px)}
-#sideOverlay.show{display:block}
-#sidebar{position:fixed;top:0;right:-420px;width:400px;height:100%;padding:35px 30px;overflow-y:auto;z-index:1000;transition:right 0.45s cubic-bezier(.4,0,.2,1);background:linear-gradient(180deg,rgba(17,24,40,0.97),rgba(11,17,32,0.97));backdrop-filter:blur(22px);box-shadow:-18px 0 55px rgba(0,0,0,0.6);border-radius:25px 0 0 25px;border-left:1px solid rgba(255,255,255,0.07)}
-#sidebar.open{right:0}
-#sidebar::-webkit-scrollbar{width:4px}
-#sidebar::-webkit-scrollbar-thumb{background:rgba(47,111,255,0.4);border-radius:2px}
-.sidebarHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
-.sidebarHeader h2{font-family:'Baloo 2',cursive;font-size:1.6rem;font-weight:700;color:#eef2ff;letter-spacing:0.3px}
-#closeBtn{background:rgba(255,255,255,0.07);border:none;width:36px;height:36px;border-radius:10px;cursor:pointer;transition:0.25s;font-size:16px;color:#eef2ff}
-#closeBtn:hover{background:#2f6fff;color:white}
-.aiBadgeWrap{margin-bottom:22px;padding:14px 18px;border-radius:14px;background:linear-gradient(135deg,rgba(47,111,255,0.12),rgba(126,166,255,0.08));border:1px solid rgba(47,111,255,0.2)}
-.aiBadgeWrap h4{font-size:11px;font-weight:700;letter-spacing:0.08em;color:#7a86a8;text-transform:uppercase;margin-bottom:6px}
-#aiBadge{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#7a86a8}
-#aiBadge.active{color:#38bdf8}
-#aiBadge::before{content:"⬤";font-size:8px;color:#374151}
-#aiBadge.active::before{color:#22c55e;animation:badgePulse 1.4s infinite}
-@keyframes badgePulse{0%,100%{opacity:1}50%{opacity:0.3}}
-.tool{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;margin-bottom:12px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));transition:0.25s;border:1px solid transparent}
-.tool:hover{transform:translateX(-5px);border:1px solid rgba(47,111,255,0.25);box-shadow:0 8px 24px rgba(47,111,255,0.12)}
-.tool span{font-size:15px;font-weight:600;color:#d1d5db;display:flex;align-items:center;gap:10px}
-.switch{position:relative;width:50px;height:26px}
-.switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;cursor:pointer;inset:0;background:#374151;border-radius:30px;transition:0.3s}
-.slider::before{content:"";position:absolute;height:20px;width:20px;left:3px;top:3px;background:white;border-radius:50%;transition:0.3s;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
-input:checked+.slider{background:linear-gradient(135deg,#2f6fff,#7ea6ff)}
-input:checked+.slider::before{transform:translateX(24px)}
-.narratorBtn{background:linear-gradient(135deg,#2f6fff,#7ea6ff);color:white;border:none;padding:9px 18px;border-radius:10px;font-weight:600;cursor:pointer;transition:0.25s;font-size:0.9rem;box-shadow:0 6px 16px rgba(47,111,255,0.3)}
-.narratorBtn:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(47,111,255,0.4)}
-.toolColumn{margin-top:20px;padding:18px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))}
-.toolColumn label{font-weight:600;color:#d1d5db;margin-bottom:10px;display:block;font-size:0.9rem}
-#textSlider{width:100%;accent-color:#2f6fff;cursor:pointer}
-.side-divider{border:none;border-top:1px solid rgba(255,255,255,0.06);margin:20px 0}
-body.dyslexia,body.dyslexia .card-title,body.dyslexia .card-desc,body.dyslexia .opt,body.dyslexia .msg{font-family:'Lexend',sans-serif!important;letter-spacing:0.05em;word-spacing:0.15em;line-height:1.9}
-body.highContrast{background:#000!important;color:#fff!important}
-body.highContrast .card{background:#0a0a0a!important;border:2px solid #fff!important}
-body.highContrast .opt{background:#111!important;border:2px solid rgba(255,255,255,0.4)!important;color:#fff!important}
-body.darkPlus{background:#000!important}
-body.darkPlus .card{background:#080808!important;border-color:rgba(255,255,255,0.1)!important}
-body.overlayYellow::after{content:'';position:fixed;inset:0;z-index:997;background:rgba(255,255,200,0.12);pointer-events:none}
-body.focusMode .card{opacity:0.3;filter:blur(1px);transition:opacity 0.35s,filter 0.35s,transform 0.35s;cursor:pointer}
-body.focusMode .card.activeFocus{opacity:1!important;filter:none!important;transform:translateY(-5px) scale(1.01)!important;box-shadow:0 0 0 3px rgba(47,111,255,0.35),0 20px 50px rgba(0,0,0,0.5)!important}
-body.motorMode{cursor:crosshair}
-body.motorMode .opt,body.motorMode button,body.motorMode .qp,body.motorMode .btn,body.motorMode .simon-btn{min-width:48px;min-height:48px;cursor:crosshair}
-body.motorMode .opt:hover,body.motorMode button:hover,body.motorMode .qp:hover{outline:3px solid #2f6fff;outline-offset:4px;box-shadow:0 0 0 6px rgba(47,111,255,0.18);border-radius:10px}
-.aiToast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;transition:opacity 0.4s,transform 0.4s;color:white;padding:14px 26px;border-radius:50px;font-weight:600;font-size:15px;box-shadow:0 12px 36px rgba(47,111,255,0.4);display:flex;align-items:center;gap:12px;z-index:9999;white-space:nowrap;font-family:'Atkinson Hyperlegible',sans-serif}
-.aiToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.aiToastIcon{background:rgba(255,255,255,0.2);padding:4px 10px;border-radius:20px;font-size:13px}
 `;
 
 /* ═══════════════════════════════════════════
@@ -1217,33 +1168,6 @@ body.motorMode .opt:hover,body.motorMode button:hover,body.motorMode .qp:hover{o
 ═══════════════════════════════════════════ */
 
 export default function InclusiveLearnApp() {
-    const { aiStatus, aiActive, toasts, latched } = useBehaviourTracker();
-    const { settings, toggle, setTextSize, bodyClasses } = useAccessibility(latched);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-
-    // Apply body classes + font size
-    useEffect(() => {
-        document.body.className = bodyClasses;
-        document.body.style.fontSize = settings.textSize + "px";
-    }, [bodyClasses, settings.textSize]);
-
-    // Spotlight (focus mode)
-    useEffect(() => {
-        if (!settings.focus) {
-            document.querySelectorAll(".activeFocus").forEach(el => el.classList.remove("activeFocus"));
-            return;
-        }
-        const onMove = e => {
-            document.querySelectorAll(".activeFocus").forEach(el => el.classList.remove("activeFocus"));
-            const el = document.elementFromPoint(e.clientX, e.clientY);
-            if (!el) return;
-            const card = el.closest(".card");
-            if (card) card.classList.add("activeFocus");
-        };
-        document.addEventListener("mousemove", onMove);
-        return () => document.removeEventListener("mousemove", onMove);
-    }, [settings.focus]);
-
     return (
         <>
             <style>{GLOBAL_CSS}</style>
@@ -1298,23 +1222,6 @@ export default function InclusiveLearnApp() {
                 <SimonGame />
                 <AiTutorGame />
             </div>
-
-            {/* Sidebar trigger */}
-            <button id="toolBtn" aria-label="Open Accessibility Settings" onClick={() => setSidebarOpen(true)}><I icon={faGear} /></button>
-
-            {/* Sidebar */}
-            <Sidebar
-                open={sidebarOpen}
-                onClose={() => setSidebarOpen(false)}
-                settings={settings}
-                toggle={toggle}
-                setTextSize={setTextSize}
-                aiStatus={aiStatus}
-                aiActive={aiActive}
-            />
-
-            {/* AI Toast notifications */}
-            <Toasts toasts={toasts} />
         </>
     );
 }

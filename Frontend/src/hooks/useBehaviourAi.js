@@ -13,7 +13,7 @@ const CFG = {
   WARMUP_MS: 20000,
   POLL_INTERVAL_MS: 8000,
 
-  THRESHOLD: { adhd: 0.42, dyslexia: 0.38, motor: 0.36 },
+  THRESHOLD: { adhd: 0.42, dyslexia: 0.38, motor: 0.36, anxiety: 0.40 },
 
   W_ADHD: {
     scrollSpeed: 0.16, scrollReversals: 0.15, mouseFrenzy: 0.17,
@@ -27,6 +27,10 @@ const CFG = {
   W_MOTOR: {
     mouseJitter: 0.28, missClickRate: 0.24, cursorArcSize: 0.18,
     keyHoldDuration: 0.16, slowCursor: 0.08, dragAbandonment: 0.06,
+  },
+  W_ANXIETY: {
+    scrollReversalRate: 0.20, mouseFrenzy: 0.18, tabSwitchRate: 0.18,
+    clickBurstRate: 0.16, idleBreaks: 0.14, erraticScrolling: 0.14,
   },
 
   SLOW_SCROLL_MAX: 450,
@@ -135,12 +139,13 @@ export default function useBehaviourAI({ onDetect } = {}) {
     dragAbandons: 0,
   });
 
-  const latched = useRef({ adhd: false, dyslexia: false, motor: false });
+  const latched = useRef({ adhd: false, dyslexia: false, motor: false, anxiety: false });
   const onDetectRef = useRef(onDetect);
   const smoothed = useRef({
     adhd: 0,
     dyslexia: 0,
     motor: 0,
+    anxiety: 0,
   });
   useEffect(() => { onDetectRef.current = onDetect; }, [onDetect]);
 
@@ -239,6 +244,28 @@ export default function useBehaviourAI({ onDetect } = {}) {
       },
     };
 
+    /* ── Anxiety ── */
+    const anxSignals = {
+      scrollReversalRate() { return clamp((r.scrollReversals / elMin()) / 18); },
+      mouseFrenzy() {
+        return clamp(avg(r.mouseDeltas) / 1600) * 0.6
+          + clamp((r.mouseDirChanges / elMin()) / 80) * 0.4;
+      },
+      tabSwitchRate() { return clamp((r.tabHides / elMin()) / 3); },
+      clickBurstRate() {
+        const recent = r.clickTimes.filter(t => Date.now() - t < 8000).length;
+        return clamp(recent / 6);
+      },
+      idleBreaks() { return clamp((r.idleCount / elMin()) / 5); },
+      erraticScrolling() {
+        if (r.scrollSpeeds.length < 10) return 0;
+        const speeds = r.scrollSpeeds.slice(-20);
+        const mean = avg(speeds);
+        const variance = avg(speeds.map(s => Math.pow(s - mean, 2)));
+        return clamp(Math.sqrt(variance) / 1200);
+      },
+    };
+
     const compute = (scorers, weights) => {
       const signals = {};
       let score = 0;
@@ -254,6 +281,7 @@ export default function useBehaviourAI({ onDetect } = {}) {
       adhd: compute(adhdSignals, CFG.W_ADHD),
       dyslexia: compute(dysSignals, CFG.W_DYSLEXIA),
       motor: compute(motSignals, CFG.W_MOTOR),
+      anxiety: compute(anxSignals, CFG.W_ANXIETY),
     };
   }, []);
 

@@ -3,9 +3,9 @@ import Navbar from '../components/common/Navbar';
 
 export default function BraillePage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div style={{ minHeight: '100vh', background: '#020617', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
-      <div className="flex-1">
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <BrailleTrainer />
       </div>
     </div>

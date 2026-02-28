@@ -1,18 +1,16 @@
 /* ================================================================
   AccessibilitySidebar.jsx
   ================================================================
-  Drop-in sidebar component for any page in the Saahas React app.
-  Integrates the useBehaviourAI hook — auto-detects ADHD, Dyslexia,
-  and Motor disability, applies classes to <body>, updates toggles,
-  and shows stacked toast notifications.
+  Global accessibility sidebar with AI behaviour detection.
+  Detects ADHD, Dyslexia, Motor, and Anxiety — applies body
+  classes, manages toggles, and shows toast notifications.
 
-  USAGE (add to any page):
-    import AccessibilitySidebar from "../components/AccessibilitySidebar";
-    // inside return:
-    <AccessibilitySidebar />
-
-  Or use the withAccessibility HOC at the bottom of this file:
-    export default withAccessibility(YourPage);
+  LOOPHOLE FIXES:
+  - Spotlight targets all structural elements (not just <section>)
+  - Manual toggle-off creates a "dismissed" flag so AI won't re-enable
+  - Settings ref eliminates stale closure in detection callback
+  - Reset clears both AI latched flags and dismissed flags
+  - Score bars always reflect live AI probabilities
 ================================================================ */
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -21,7 +19,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faBullseye, faBookOpen, faMouse, faFaceFrown, faMoon, faCircle, faBrain, faVolumeHigh, faGear, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 /* ── Toast Queue ─────────────────────────────────────────────── */
-function ToastStack({ toasts, onDismiss }) {
+function ToastStack({ toasts }) {
   return (
     <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] flex flex-col-reverse gap-3 items-center pointer-events-none">
       {toasts.map((toast) => (
@@ -64,7 +62,7 @@ function Toggle({ checked, onChange }) {
 }
 
 /* ── Sidebar Tool Row ────────────────────────────────────────── */
-function ToolRow({ icon, label, checked, onChange }) {
+function ToolRow({ icon, label, checked, onChange, aiScore, color }) {
   return (
     <div
       className={`flex items-center justify-between px-4 py-3.5 rounded-2xl mb-2.5 transition-all duration-300 border ${checked
@@ -72,10 +70,26 @@ function ToolRow({ icon, label, checked, onChange }) {
         : "bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10 hover:-translate-x-1"
         }`}
     >
-      <span className="flex items-center gap-3 text-sm font-semibold text-white/80">
-        <span className="text-lg">{icon}</span>
-        {label}
-      </span>
+      <div className="flex-1 mr-3">
+        <span className="flex items-center gap-3 text-sm font-semibold text-white/80">
+          <span className="text-lg">{icon}</span>
+          {label}
+        </span>
+        {/* Mini confidence bar directly on the toggle row */}
+        {typeof aiScore === "number" && (
+          <div className="mt-1.5 ml-8">
+            <div className="h-1 rounded-full bg-white/5 overflow-hidden w-full max-w-[120px]">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${Math.round(aiScore * 100)}%`, background: color || "#3b82f6" }}
+              />
+            </div>
+            <span className="text-[8px] font-bold mt-0.5 block" style={{ color: color || "#3b82f6" }}>
+              {Math.round(aiScore * 100)}% AI confidence
+            </span>
+          </div>
+        )}
+      </div>
       <Toggle checked={checked} onChange={onChange} />
     </div>
   );
@@ -95,7 +109,7 @@ function AIBadge({ status, active, scores }) {
         {status}
       </div>
       {scores && (
-        <div className="mt-3 grid grid-cols-3 gap-1.5">
+        <div className="mt-3 grid grid-cols-4 gap-1.5">
           {[
             { key: "adhd", label: "ADHD", color: "#3b82f6" },
             { key: "dyslexia", label: "Dyslexia", color: "#22c55e" },
@@ -105,15 +119,15 @@ function AIBadge({ status, active, scores }) {
             <div key={key} className="text-center">
               <div className="text-[9px] text-white/30 mb-1 uppercase tracking-wider">{label}</div>
               <div
-                className="h-1 rounded-full bg-white/5 overflow-hidden"
+                className="h-1.5 rounded-full bg-white/5 overflow-hidden"
                 title={`${Math.round((scores[key] || 0) * 100)}%`}
               >
                 <div
-                  className="h-full rounded-full transition-all duration-500"
+                  className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${Math.round((scores[key] || 0) * 100)}%`, background: color }}
                 />
               </div>
-              <div className="text-[9px] font-bold mt-0.5" style={{ color }}>
+              <div className="text-[10px] font-bold mt-0.5" style={{ color }}>
                 {Math.round((scores[key] || 0) * 100)}%
               </div>
             </div>
@@ -122,6 +136,50 @@ function AIBadge({ status, active, scores }) {
       )}
     </div>
   );
+}
+
+/* ── Focus mode: find the nearest meaningful block under cursor ── */
+function findFocusTarget(el) {
+  if (!el || el === document.body || el === document.documentElement) return null;
+
+  // Skip sidebar, navbar, fixed overlays
+  if (el.closest("aside, nav, header, [class*='z-[99']")) return null;
+
+  // Walk up and find the best container — a visible block with reasonable size
+  let best = null;
+  let cur = el;
+  const MIN_W = 120, MIN_H = 60, MAX_W_RATIO = 0.92;
+  const vpW = window.innerWidth;
+
+  while (cur && cur !== document.body && cur !== document.documentElement) {
+    const tag = cur.tagName;
+
+    // Skip inline elements
+    if (tag === "SPAN" || tag === "A" || tag === "STRONG" || tag === "EM" || tag === "B" || tag === "I" || tag === "LABEL") {
+      cur = cur.parentElement;
+      continue;
+    }
+
+    const rect = cur.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+
+    // Skip elements that are too small or take up the entire viewport width
+    if (w < MIN_W || h < MIN_H) {
+      cur = cur.parentElement;
+      continue;
+    }
+    if (w > vpW * MAX_W_RATIO) {
+      // This is a full-width wrapper — keep looking but save as fallback
+      if (!best) best = cur;
+      cur = cur.parentElement;
+      continue;
+    }
+
+    // Good candidate — a block that's not full-width and has visible size
+    return cur;
+  }
+
+  return best;
 }
 
 /* ================================================================
@@ -134,12 +192,25 @@ export default function AccessibilitySidebar() {
   const [aiActive, setAiActive] = useState(false);
   const [aiScores, setAiScores] = useState(null);
 
-  /* Accessibility state */
+  /* ── Accessibility settings state ── */
   const [settings, setSettings] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("saahas_a11y") || "{}");
+      const saved = JSON.parse(localStorage.getItem("saahas_a11y") || "{}");
+      // Never start with disability modes on — they must be detected or toggled manually
+      delete saved.adhd;
+      delete saved.dyslexia;
+      delete saved.motor;
+      delete saved.anxiety;
+      return saved;
     } catch { return {}; }
   });
+
+  /* Ref mirrors settings so callbacks always see latest values */
+  const settingsRef = useRef(settings);
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
+
+  /* Tracks which conditions the user manually dismissed (turned off after AI enabled) */
+  const dismissedRef = useRef({ adhd: false, dyslexia: false, motor: false, anxiety: false });
 
   const textSize = settings.textSize || 16;
 
@@ -163,34 +234,112 @@ export default function AccessibilitySidebar() {
     return () => window.removeEventListener("keydown", fn);
   }, []);
 
-  /* ── Narrator ── */
+  /* ── Narrator (hover-to-read) ── */
   const [narrating, setNarrating] = useState(false);
+  const narratorFn = useRef(null);
+  const lastSpoken = useRef("");
+
   const toggleNarrator = () => {
     if (!narrating) {
-      const utt = new SpeechSynthesisUtterance(document.body.innerText);
-      utt.rate = 0.9;
-      speechSynthesis.cancel();
-      speechSynthesis.speak(utt);
       setNarrating(true);
     } else {
       speechSynthesis.cancel();
+      if (narratorFn.current) {
+        document.removeEventListener("mouseover", narratorFn.current);
+        narratorFn.current = null;
+      }
+      lastSpoken.current = "";
       setNarrating(false);
     }
   };
 
-  /* ── Spotlight cursor (ADHD focus mode) ── */
+  useEffect(() => {
+    if (narrating) {
+      narratorFn.current = (e) => {
+        const el = e.target;
+        if (!el) return;
+        // Skip sidebar elements
+        if (el.closest("aside[class*='z-[1000]']")) return;
+        const text = (el.innerText || el.textContent || "").trim();
+        if (!text || text.length > 500 || text === lastSpoken.current) return;
+        lastSpoken.current = text;
+        speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.rate = 0.95;
+        speechSynthesis.speak(utt);
+      };
+      document.addEventListener("mouseover", narratorFn.current);
+    }
+    return () => {
+      if (narratorFn.current) {
+        document.removeEventListener("mouseover", narratorFn.current);
+        narratorFn.current = null;
+      }
+    };
+  }, [narrating]);
+
+  /* ── ADHD Focus Mode: Overlay spotlight ── */
   const spotlightRef = useRef(false);
   const spotlightFn = useRef(null);
+  const overlayRef = useRef(null);
+  const lastFocused = useRef(null);
 
   const enableSpotlight = useCallback(() => {
     if (spotlightRef.current) return;
     spotlightRef.current = true;
+
+    // Create the dark overlay
+    if (!overlayRef.current) {
+      const ov = document.createElement("div");
+      ov.id = "adhd-focus-overlay";
+      ov.style.cssText = `
+        position: fixed; inset: 0; z-index: 900;
+        background: rgba(0, 0, 0, 0.7);
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      `;
+      document.body.appendChild(ov);
+      overlayRef.current = ov;
+    }
+    overlayRef.current.style.opacity = "1";
+
     spotlightFn.current = (e) => {
-      document.querySelectorAll(".activeFocus").forEach(el => el.classList.remove("activeFocus"));
+      // Don't spotlight sidebar elements
+      if (e.target.closest("aside, nav, #adhd-focus-overlay")) return;
+
       const el = document.elementFromPoint(e.clientX, e.clientY);
       if (!el) return;
-      const sec = el.closest("section") || (el.tagName === "SECTION" ? el : null);
-      if (sec) sec.classList.add("activeFocus");
+      const target = findFocusTarget(el);
+
+      // Same element? Skip
+      if (target === lastFocused.current) return;
+
+      // Remove spotlight from previous element
+      if (lastFocused.current) {
+        lastFocused.current.style.position = lastFocused.current.dataset.origPosition || "";
+        lastFocused.current.style.zIndex = lastFocused.current.dataset.origZIndex || "";
+        lastFocused.current.style.outline = "";
+        lastFocused.current.style.outlineOffset = "";
+        lastFocused.current.style.borderRadius = lastFocused.current.dataset.origRadius || "";
+        delete lastFocused.current.dataset.origPosition;
+        delete lastFocused.current.dataset.origZIndex;
+        delete lastFocused.current.dataset.origRadius;
+        lastFocused.current = null;
+      }
+
+      // Add spotlight to new element
+      if (target) {
+        target.dataset.origPosition = target.style.position || "";
+        target.dataset.origZIndex = target.style.zIndex || "";
+        target.dataset.origRadius = target.style.borderRadius || "";
+        const cs = getComputedStyle(target);
+        if (cs.position === "static") target.style.position = "relative";
+        target.style.zIndex = "901";
+        target.style.outline = "2px solid rgba(59, 130, 246, 0.5)";
+        target.style.outlineOffset = "4px";
+        if (!target.style.borderRadius) target.style.borderRadius = "12px";
+        lastFocused.current = target;
+      }
     };
     document.addEventListener("mousemove", spotlightFn.current);
   }, []);
@@ -201,11 +350,30 @@ export default function AccessibilitySidebar() {
       document.removeEventListener("mousemove", spotlightFn.current);
       spotlightFn.current = null;
     }
-    document.querySelectorAll(".activeFocus").forEach(el => el.classList.remove("activeFocus"));
+    // Clean up focused element
+    if (lastFocused.current) {
+      lastFocused.current.style.position = lastFocused.current.dataset.origPosition || "";
+      lastFocused.current.style.zIndex = lastFocused.current.dataset.origZIndex || "";
+      lastFocused.current.style.outline = "";
+      lastFocused.current.style.outlineOffset = "";
+      lastFocused.current.style.borderRadius = lastFocused.current.dataset.origRadius || "";
+      lastFocused.current = null;
+    }
+    // Remove overlay
+    if (overlayRef.current) {
+      overlayRef.current.style.opacity = "0";
+      setTimeout(() => {
+        if (overlayRef.current && !spotlightRef.current) {
+          overlayRef.current.remove();
+          overlayRef.current = null;
+        }
+      }, 300);
+    }
   }, []);
 
   useEffect(() => {
     if (settings.adhd) enableSpotlight(); else disableSpotlight();
+    return () => disableSpotlight();
   }, [settings.adhd, enableSpotlight, disableSpotlight]);
 
   /* ── Motor mode (click magnet) ── */
@@ -213,6 +381,10 @@ export default function AccessibilitySidebar() {
   useEffect(() => {
     if (settings.motor) {
       motorFn.current = (e) => {
+        // Don't interfere with sidebar clicks
+        const sidebar = e.target.closest("aside[class*='z-[1000]']");
+        if (sidebar) return;
+
         const targets = document.querySelectorAll("a,button,input,select,textarea,label,[role='button']");
         let closest = null, minDist = 60;
         targets.forEach(t => {
@@ -237,15 +409,27 @@ export default function AccessibilitySidebar() {
     };
   }, [settings.motor]);
 
-  /* ── Contrast / Dark are mutually exclusive ── */
-  const setSetting = (key, val) => {
+  /* ── Setting setter with mutual exclusion ── */
+  const setSetting = useCallback((key, val) => {
     setSettings(prev => {
       const next = { ...prev, [key]: val };
       if (key === "contrast" && val) next.dark = false;
       if (key === "dark" && val) next.contrast = false;
       return next;
     });
-  };
+  }, []);
+
+  /* ── Manual toggle handler (tracks dismissed state) ── */
+  const handleManualToggle = useCallback((key, val) => {
+    setSetting(key, val);
+    if (!val) {
+      // User manually turned OFF → mark as dismissed so AI won't re-enable
+      dismissedRef.current[key] = true;
+    } else {
+      // User manually turned ON → clear dismissed flag
+      dismissedRef.current[key] = false;
+    }
+  }, [setSetting]);
 
   /* ── Toast helper ── */
   const showToast = useCallback((icon, label, pct, c1, c2) => {
@@ -254,76 +438,117 @@ export default function AccessibilitySidebar() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 7000);
   }, []);
 
-  /* ── AI detection callback ── */
+  /* ── AI detection callback (uses ref to avoid stale closure) ── */
   const handleDetect = useCallback((condition, prob, signals) => {
     const pct = Math.round(prob * 100);
 
-    if (condition === "adhd") {
-      setSetting("adhd", true);
-      showToast(<FontAwesomeIcon icon={faBullseye} />, "ADHD Focus Mode activated", pct, "#1e3a8a", "#2563eb");
-    }
-    if (condition === "dyslexia") {
-      setSetting("dyslexia", true);
-      showToast(<FontAwesomeIcon icon={faBookOpen} />, "Dyslexia Font Mode activated", pct, "#064e3b", "#047857");
-    }
-    if (condition === "motor") {
-      setSetting("motor", true);
-      showToast(<FontAwesomeIcon icon={faMouse} />, "Motor Assist activated", pct, "#7c2d12", "#c2410c");
-    }
-    if (condition === "anxiety") {
-      showToast(<FontAwesomeIcon icon={faFaceFrown} />, "Anxiety Support Mode suggested", pct, "#92400e", "#f59e0b");
-    }
+    // LOOPHOLE FIX: Don't re-enable if user manually dismissed
+    if (dismissedRef.current[condition]) return;
+
+    // LOOPHOLE FIX: Don't re-enable if already active
+    if (settingsRef.current[condition]) return;
+
+    const DETECTIONS = {
+      adhd: { icon: faBullseye, label: "ADHD Focus Mode activated", c1: "#1e3a8a", c2: "#2563eb" },
+      dyslexia: { icon: faBookOpen, label: "Dyslexia Font Mode activated", c1: "#064e3b", c2: "#047857" },
+      motor: { icon: faMouse, label: "Motor Assist activated", c1: "#7c2d12", c2: "#c2410c" },
+      anxiety: { icon: faFaceFrown, label: "Anxiety detected — Consider a break", c1: "#92400e", c2: "#f59e0b" },
+    };
+    const d = DETECTIONS[condition];
+    if (!d) return;
+
+    setSetting(condition, true);
+    showToast(<FontAwesomeIcon icon={d.icon} />, d.label, pct, d.c1, d.c2);
 
     setAiActive(true);
-    setAiStatus(
-      ["adhd", "dyslexia", "motor"]
-        .filter(k => k === condition || (k === "adhd" && settings.adhd) || (k === "dyslexia" && settings.dyslexia) || (k === "motor" && settings.motor))
-        .map(k => k.charAt(0).toUpperCase() + k.slice(1) + " ✓")
-        .join("  ·  ") || condition.charAt(0).toUpperCase() + condition.slice(1) + " ✓"
-    );
-  }, [showToast, settings]);
+    const currentSettings = settingsRef.current;
+    const detected = ["adhd", "dyslexia", "motor", "anxiety"]
+      .filter(k => k === condition || currentSettings[k])
+      .map(k => k.charAt(0).toUpperCase() + k.slice(1) + " ✓");
+    setAiStatus(detected.join("  ·  "));
+  }, [showToast, setSetting]);
 
-  /* ── Live score updates for badge bars ── */
+  /* ── AI engine hook ── */
   const behaviourAI = useBehaviourAI({ onDetect: handleDetect });
 
+  /* ── Live score polling for badge bars ── */
   const getScores = behaviourAI.getScores;
+  const scoreRef = useRef(null);
   useEffect(() => {
-    const interval = setInterval(() => {
+    let rafId;
+    const updateScores = () => {
       try {
         if (!getScores) return;
-
         const res = getScores();
-
         if (!res) return;
-        setAiScores({
+        const next = {
           adhd: res.adhd.probability,
           dyslexia: res.dyslexia.probability,
           motor: res.motor.probability,
-          anxiety: res.anxiety.probability,
-        });
+          anxiety: res.anxiety?.probability ?? 0,
+        };
+        // Only setState if scores actually changed >0.5% (avoids unnecessary re-renders)
+        const prev = scoreRef.current;
+        if (!prev || Object.keys(next).some(k => Math.abs(next[k] - (prev[k] || 0)) > 0.005)) {
+          scoreRef.current = next;
+          setAiScores(next);
+        }
         if (!aiActive) {
           const top = Object.entries({
-            ADHD: res.adhd.probability, Dyslexia: res.dyslexia.probability, Motor: res.motor.probability, Anxiety: res.anxiety.probability
+            ADHD: next.adhd, Dyslexia: next.dyslexia, Motor: next.motor, Anxiety: next.anxiety
           }).sort((a, b) => b[1] - a[1])[0];
           setAiStatus(`Monitoring… (${top[0]} ${Math.round(top[1] * 100)}%)`);
         }
       } catch (_) { }
-    }, 3000);
-    return () => clearInterval(interval);
+    };
+    const poll = () => {
+      if (typeof requestIdleCallback !== 'undefined') {
+        rafId = requestIdleCallback(() => { updateScores(); });
+      } else {
+        updateScores();
+      }
+    };
+    const interval = setInterval(poll, 3000);
+    return () => {
+      clearInterval(interval);
+      if (typeof cancelIdleCallback !== 'undefined' && rafId) cancelIdleCallback(rafId);
+    };
   }, [getScores, aiActive]);
 
-  /* ── Update status when latched states change ── */
+  /* ── Update status text when settings change ── */
   useEffect(() => {
-    const detected = [];
-    if (settings.adhd) detected.push("ADHD ✓");
-    if (settings.dyslexia) detected.push("Dyslexia ✓");
-    if (settings.motor) detected.push("Motor ✓");
-    if (settings.anxiety) detected.push("Anxiety ✓");
+    const detected = ["adhd", "dyslexia", "motor", "anxiety"]
+      .filter(k => settings[k])
+      .map(k => k.charAt(0).toUpperCase() + k.slice(1) + " ✓");
     if (detected.length) {
       setAiStatus(detected.join("  ·  "));
       setAiActive(true);
+    } else {
+      setAiActive(false);
+      setAiStatus("Monitoring…");
     }
-  }, [settings.adhd, settings.dyslexia, settings.motor]);
+  }, [settings.adhd, settings.dyslexia, settings.motor, settings.anxiety]);
+
+  /* ── Reset all settings + AI state ── */
+  const handleReset = useCallback(() => {
+    setSettings({});
+    dismissedRef.current = { adhd: false, dyslexia: false, motor: false, anxiety: false };
+    // Reset the AI engine's latched flags so it can re-detect
+    if (behaviourAI.latched) {
+      behaviourAI.latched.adhd = false;
+      behaviourAI.latched.dyslexia = false;
+      behaviourAI.latched.motor = false;
+      behaviourAI.latched.anxiety = false;
+    }
+    setAiActive(false);
+    setAiStatus("Monitoring…");
+    setAiScores(null);
+    scoreRef.current = null;
+    document.body.removeAttribute("style");
+    ["dyslexia", "focusMode", "motorMode", "highContrast", "dark", "overlayYellow"]
+      .forEach(c => document.body.classList.remove(c));
+    document.querySelectorAll(".activeFocus").forEach(el => el.classList.remove("activeFocus"));
+  }, [behaviourAI.latched]);
 
   return (
     <>
@@ -391,20 +616,49 @@ export default function AccessibilitySidebar() {
 
           {/* Divider */}
           <p className="text-[9px] font-black tracking-[0.25em] uppercase text-white/20 px-1 pb-1 pt-2">
-            Visual
+            AI-Detected Disabilities
           </p>
 
-          <ToolRow icon={<FontAwesomeIcon icon={faBookOpen} />} label="Dyslexia Font" checked={!!settings.dyslexia} onChange={v => setSetting("dyslexia", v)} />
+          <ToolRow
+            icon={<FontAwesomeIcon icon={faBrain} />}
+            label="ADHD Focus"
+            checked={!!settings.adhd}
+            onChange={v => handleManualToggle("adhd", v)}
+            aiScore={aiScores?.adhd}
+            color="#3b82f6"
+          />
+          <ToolRow
+            icon={<FontAwesomeIcon icon={faBookOpen} />}
+            label="Dyslexia Font"
+            checked={!!settings.dyslexia}
+            onChange={v => handleManualToggle("dyslexia", v)}
+            aiScore={aiScores?.dyslexia}
+            color="#22c55e"
+          />
+          <ToolRow
+            icon={<FontAwesomeIcon icon={faMouse} />}
+            label="Motor Assist"
+            checked={!!settings.motor}
+            onChange={v => handleManualToggle("motor", v)}
+            aiScore={aiScores?.motor}
+            color="#ef4444"
+          />
+          <ToolRow
+            icon={<FontAwesomeIcon icon={faFaceFrown} />}
+            label="Anxiety Support"
+            checked={!!settings.anxiety}
+            onChange={v => handleManualToggle("anxiety", v)}
+            aiScore={aiScores?.anxiety}
+            color="#f59e0b"
+          />
+
+          <p className="text-[9px] font-black tracking-[0.25em] uppercase text-white/20 px-1 pb-1 pt-4">
+            Visual Settings
+          </p>
+
           <ToolRow icon={<FontAwesomeIcon icon={faMoon} />} label="High Contrast" checked={!!settings.contrast} onChange={v => setSetting("contrast", v)} />
           <ToolRow icon={<FontAwesomeIcon icon={faMoon} />} label="Dark Mode" checked={!!settings.dark} onChange={v => setSetting("dark", v)} />
           <ToolRow icon={<FontAwesomeIcon icon={faCircle} style={{ color: '#eab308' }} />} label="Colour Overlay" checked={!!settings.overlay} onChange={v => setSetting("overlay", v)} />
-
-          <p className="text-[9px] font-black tracking-[0.25em] uppercase text-white/20 px-1 pb-1 pt-4">
-            Focus & Motor
-          </p>
-
-          <ToolRow icon={<FontAwesomeIcon icon={faBrain} />} label="ADHD Focus" checked={!!settings.adhd} onChange={v => setSetting("adhd", v)} />
-          <ToolRow icon={<FontAwesomeIcon icon={faMouse} />} label="Motor Assist" checked={!!settings.motor} onChange={v => setSetting("motor", v)} />
 
           {/* Narrator */}
           <div className="flex items-center justify-between px-4 py-3.5 rounded-2xl mb-2.5 bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all">
@@ -445,12 +699,7 @@ export default function AccessibilitySidebar() {
         {/* Footer */}
         <div className="px-5 py-4 border-t border-white/5">
           <button
-            onClick={() => {
-              setSettings({});
-              document.body.removeAttribute("style");
-              ["dyslexia", "focusMode", "motorMode", "highContrast", "dark", "overlayYellow"]
-                .forEach(c => document.body.classList.remove(c));
-            }}
+            onClick={handleReset}
             className="w-full py-2 rounded-xl text-[10px] font-black tracking-wider uppercase
                         text-white/20 hover:text-white/40 hover:bg-white/5 transition-all"
           >
@@ -485,22 +734,28 @@ export default function AccessibilitySidebar() {
             background: rgba(255,255,180,0.25);
           }
 
-          body.focusMode { letter-spacing:.04em; word-spacing:.08em; line-height:2; }
-          body.focusMode section { opacity:.3; filter:blur(1.5px); transition:opacity .35s,filter .35s; }
-          body.focusMode section.activeFocus {
-            opacity:1 !important; filter:none !important;
-            transform:scale(1.01); outline:3px solid rgba(47,111,255,0.3);
-            border-radius:18px; box-shadow:0 14px 40px rgba(47,111,255,.18);
+          /* ── ADHD Focus Mode ── */
+          body.focusMode {
+            letter-spacing: 0.03em;
+            word-spacing: 0.06em;
           }
 
+          /* Overlay approach — spotlight is handled via JS z-index,
+             no CSS opacity/blur needed on content elements */
+
+          /* ── Motor Mode ── */
           body.motorMode a, body.motorMode button, body.motorMode input,
-          body.motorMode select, body.motorMode label, body.motorMode [role="button"] {
-            min-width:48px !important; min-height:48px !important;
-            padding:12px 18px !important; font-size:1.05em !important;
+          body.motorMode select, body.motorMode textarea, body.motorMode label,
+          body.motorMode [role="button"] {
+            min-height: 44px !important;
+            cursor: pointer;
           }
-          body.motorMode a:hover, body.motorMode button:hover {
-            outline:3px solid #2f6fff; outline-offset:4px;
-            box-shadow:0 0 0 6px rgba(47,111,255,.15);
+          body.motorMode a:hover, body.motorMode button:hover,
+          body.motorMode input:focus, body.motorMode select:focus,
+          body.motorMode textarea:focus, body.motorMode [role="button"]:hover {
+            outline: 3px solid #2f6fff;
+            outline-offset: 3px;
+            box-shadow: 0 0 0 6px rgba(47,111,255,.12);
           }
 
           @keyframes slideUp {

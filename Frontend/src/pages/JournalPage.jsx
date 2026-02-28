@@ -52,6 +52,8 @@ export default function JournalPage() {
   const recognitionRef = useRef(null);
   const silenceTimerRef = useRef(null);
   const chatEndRef = useRef(null);
+  const inputRef = useRef("");  // always-current mirror of inputText
+  const autoSendRef = useRef(false); // flag: was this stop triggered by silence timer?
 
   /* ── Auto-scroll to latest message ───────────────────────── */
   useEffect(() => {
@@ -59,58 +61,90 @@ export default function JournalPage() {
   }, [messages, loading]);
 
   /* =========================================================
-     SILENCE TIMER — auto-stop mic after 5s of silence
+     SILENCE TIMER — auto-send after 3s of no new speech
   ========================================================= */
 
   function resetSilenceTimer() {
     clearTimeout(silenceTimerRef.current);
     silenceTimerRef.current = setTimeout(() => {
+      autoSendRef.current = true;
       stopListening();
-    }, 5000);
+    }, 3000);
   }
 
   /* =========================================================
-     SPEECH RECOGNITION
+     SPEECH RECOGNITION — single-utterance chaining
+     Each utterance is captured, then recognition auto-restarts
+     to capture the next phrase. After 3s of silence → auto-send.
   ========================================================= */
 
-  function startListening() {
+  function createRecognition() {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      alert("Speech recognition not supported in this browser. Please use Chrome.");
-      return;
-    }
+    if (!SpeechRecognition) return null;
 
     const recognition = new SpeechRecognition();
     recognition.lang = "en-IN";
-    recognition.continuous = true;
+    recognition.continuous = false;   // single utterance — more reliable
     recognition.interimResults = false;
 
     recognition.onresult = (event) => {
-      let finalTranscript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript + " ";
-        }
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript + " ";
       }
-      setInputText(prev => prev + finalTranscript);
-      resetSilenceTimer();
+      if (transcript.trim()) {
+        setInputText(prev => {
+          const next = prev + transcript;
+          inputRef.current = next;
+          return next;
+        });
+        // Got speech → reset the silence countdown
+        resetSilenceTimer();
+      }
     };
 
-    recognition.onspeechend = () => {
-      resetSilenceTimer();
+    // When one utterance ends, auto-restart to capture the next
+    recognition.onend = () => {
+      // Only restart if we're still supposed to be listening
+      // and the silence timer hasn't fired yet
+      if (recognitionRef.current && !autoSendRef.current) {
+        try {
+          recognition.start();
+        } catch (_) { /* ignore */ }
+      }
     };
 
     recognition.onerror = (e) => {
-      console.error("Speech error:", e);
-      stopListening();
+      // "no-speech" and "aborted" are normal — just let onend restart
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        alert("Microphone access denied. Please allow microphone in your browser settings.");
+        recognitionRef.current = null;
+        setListening(false);
+      }
     };
 
-    recognition.start();
+    return recognition;
+  }
+
+  function startListening() {
+    if (recognitionRef.current) return; // already listening
+
+    const recognition = createRecognition();
+    if (!recognition) {
+      alert("Speech recognition not supported. Please use Chrome.");
+      return;
+    }
+
+    // Clear previous text for a fresh prompt
+    setInputText("");
+    inputRef.current = "";
+    autoSendRef.current = false;
+
     recognitionRef.current = recognition;
     setListening(true);
-    resetSilenceTimer();
+    recognition.start();
+    // No silence timer here — it starts only after first speech result
   }
 
   function stopListening() {
@@ -118,6 +152,14 @@ export default function JournalPage() {
     recognitionRef.current?.stop();
     recognitionRef.current = null;
     setListening(false);
+
+    // Auto-send if triggered by silence timer and there's accumulated text
+    if (autoSendRef.current && inputRef.current.trim()) {
+      autoSendRef.current = false;
+      // Small delay to let state settle
+      setTimeout(() => handleSend(), 100);
+    }
+    autoSendRef.current = false;
   }
 
   /* =========================================================
@@ -203,7 +245,8 @@ export default function JournalPage() {
   ========================================================= */
 
   async function handleSend() {
-    const text = inputText.trim();
+    // Use ref as fallback (fixes stale closure when called from silence timer)
+    const text = (inputText || inputRef.current).trim();
     if (!text || loading) return;
 
     if (listening) stopListening();
@@ -219,6 +262,7 @@ export default function JournalPage() {
         { role: "assistant", text: crisisReply, crisis: true },
       ]);
       setInputText("");
+      inputRef.current = "";
       speak(crisisReply);
       return;
     }
@@ -227,6 +271,7 @@ export default function JournalPage() {
     const updatedMessages = [...messages, { role: "user", text }];
     setMessages(updatedMessages);
     setInputText("");
+    inputRef.current = "";
     setLoading(true);
 
     try {
@@ -426,7 +471,7 @@ export default function JournalPage() {
                 {/* Text input */}
                 <textarea
                   value={inputText}
-                  onChange={e => setInputText(e.target.value)}
+                  onChange={e => { setInputText(e.target.value); inputRef.current = e.target.value; }}
                   onKeyDown={handleKeyDown}
                   placeholder={
                     listening

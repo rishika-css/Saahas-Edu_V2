@@ -1,98 +1,172 @@
+/**
+ * BrailleTrainer.jsx — Full drop-in replacement
+ *
+ * HOW TO USE:
+ *   1. Replace your existing src/components/braille/BrailleTrainer.jsx with this file.
+ *   2. Keep your BrailleEngine import path matching your project.
+ *   3. No other files need to change.
+ */
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye, faKeyboard, faPenToSquare, faVolumeHigh, faVolumeXmark, faBookOpen, faRocket, faTrophy, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 import {
-  textToTokens,
-  dotsToLetter,
-  chordToContraction,
-  brailleLetters,
-  grade2Contractions,
+  faEye, faKeyboard, faPenToSquare, faVolumeHigh, faVolumeXmark,
+  faBookOpen, faRocket, faTrophy, faTrashCan, faChevronDown, faChevronUp, faBolt,
+} from '@fortawesome/free-solid-svg-icons';
+import {
+  textToTokens, dotsToLetter, chordToContraction,
+  brailleLetters, grade2Contractions,
 } from '../../utils/BrailleEngine';
 
 // ─────────────────────────────────────────────────────────────
-//  CONSTANTS
+//  DESIGN TOKENS — dark IDE palette
 // ─────────────────────────────────────────────────────────────
+const T = {
+  bg0: '#020617',
+  bg1: '#0a0f1e',
+  bg2: '#0f172a',
+  bg3: '#1e293b',
+  bg4: '#334155',
+  text0: '#f1f5f9',
+  text1: '#94a3b8',
+  text2: '#475569',
+  text3: '#334155',
+  violet: '#7c3aed',
+  violetMid: '#6d28d9',
+  violetLight: '#a78bfa',
+  green: '#34d399',
+  greenDark: '#022c22',
+  greenBorder: '#064e3b',
+  red: '#f87171',
+  redDark: '#2d0a0a',
+  redBorder: '#7f1d1d',
+  amber: '#f59e0b',
+  amberDark: '#422006',
+  amberBorder: '#92400e',
+  blue: '#60a5fa',
+  blueDark: '#1e3a5f',
+};
+
 const ALLOWED_KEYS = ['f', 'd', 's', 'j', 'k', 'l'];
 const KEY_TO_DOT = { f: 1, d: 2, s: 3, j: 4, k: 5, l: 6 };
 
 // ─────────────────────────────────────────────────────────────
-//  AUDIO HOOK
+//  AUDIO
 // ─────────────────────────────────────────────────────────────
 function useAudio(enabled) {
   const ctxRef = useRef(null);
 
-  const play = useCallback((freq, ms) => {
-    if (!enabled) return;
+  const getCtx = useCallback(() => {
     if (!ctxRef.current)
       ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    return ctxRef.current;
+  }, []);
 
-    const osc = ctxRef.current.createOscillator();
-    const gain = ctxRef.current.createGain();
-
+  // Single flat tone — for per-dot beeps
+  const play = useCallback((freq, ms, volume = 0.12) => {
+    if (!enabled) return;
+    const ctx = getCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
     osc.frequency.value = freq;
-    osc.connect(gain);
-    gain.connect(ctxRef.current.destination);
-
+    gain.gain.setValueAtTime(volume, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + ms / 1000);
+    osc.connect(gain); gain.connect(ctx.destination);
     osc.start();
+    setTimeout(() => { try { osc.stop(); } catch (_) { } }, ms + 80);
+  }, [enabled, getCtx]);
 
-    // Fixed empty catch block with a warning log for better debugging
-    setTimeout(() => {
-      try {
-        osc.stop();
-      } catch (error) {
-        console.warn("WebAudio Oscillator stop failed:", error);
-      }
-    }, ms);
-  }, [enabled]);
+  // Rising sweep + sustain — fired when all 6 keys are confirmed
+  const playComplete = useCallback(() => {
+    if (!enabled) return;
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    // Sweep from 400 Hz → 900 Hz over 180 ms, then hold briefly
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.linearRampToValueAtTime(900, now + 0.18);
+    osc.frequency.setValueAtTime(900, now + 0.18);
+    gain.gain.setValueAtTime(0.0, now);
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.04);   // fast attack
+    gain.gain.setValueAtTime(0.22, now + 0.28);             // sustain
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55); // decay
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now);
+    setTimeout(() => { try { osc.stop(); } catch (_) { } }, 620);
+  }, [enabled, getCtx]);
+
+  // Buzzy sawtooth drop — unmistakably different from the clean sine ping
+  const playWrong = useCallback(() => {
+    if (!enabled) return;
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.linearRampToValueAtTime(90, now + 0.18); // pitch drop
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now);
+    setTimeout(() => { try { osc.stop(); } catch (_) { } }, 280);
+  }, [enabled, getCtx]);
 
   return useMemo(() => ({
-    correct: () => play(700, 100),
-    wrong: () => play(200, 300),
-    commit: () => play(520, 160),
+    correct: () => play(720, 110),   // short clean sine ping
+    wrong: () => playWrong(),      // buzzy sawtooth pitch-drop
+    complete: () => playComplete(),   // rising sweep — all 6 pressed
+    commit: () => play(520, 160),   // braille-input mode commit
     space: () => play(400, 100),
-  }), [play]);
+  }), [play, playWrong, playComplete]);
 }
 
 // ─────────────────────────────────────────────────────────────
-//  BRAILLE DOT-CELL CARD
+//  BRAILLE CELL
 // ─────────────────────────────────────────────────────────────
-function BrailleCell({ token, pressedKeys = new Set() }) {
-  const isG2 =
-    token.display.length > 1 ||
-    (token.dots && !brailleLetters[token.display.toLowerCase()]);
+function BrailleCell({ token, pressedKeys = new Set(), size = 'md' }) {
+  const isG2 = token.display.length > 1 || (token.dots && !brailleLetters[token.display.toLowerCase()]);
+  const dotDim = size === 'lg' ? 20 : size === 'sm' ? 9 : 14;
+  const colGap = size === 'lg' ? 14 : size === 'sm' ? 6 : 10;
+  const rowGap = size === 'lg' ? 10 : size === 'sm' ? 5 : 8;
+  const pad = size === 'lg' ? 16 : size === 'sm' ? 8 : 12;
+  const labelSz = size === 'sm' ? 8 : 10;
 
-  const leftKeys = ['f', 'd', 's'];
-  const rightKeys = ['j', 'k', 'l'];
-
-  const dotClass = (key) => {
+  const dotStyle = (key) => {
     const filled = token.dots?.includes(key);
     const pressed = pressedKeys.has(key);
-    if (filled && pressed) return 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]';
-    if (!filled && pressed) return 'bg-red-400';
-    if (filled) return 'bg-purple-600 shadow-[0_0_8px_rgba(147,51,234,0.35)]';
-    return 'bg-gray-200';
+    if (filled && pressed) return { bg: T.green, shadow: `0 0 10px ${T.green}40` };
+    if (!filled && pressed) return { bg: T.red, shadow: `0 0 8px  ${T.red}40` };
+    if (filled) return { bg: T.violetLight, shadow: `0 0 8px  ${T.violetLight}50` };
+    return { bg: T.bg3, shadow: 'none' };
   };
 
   return (
-    <div className="relative flex flex-col items-center bg-white p-3 pt-4 rounded-2xl shadow-sm border border-gray-100 min-w-[72px] select-none">
+    <div style={{
+      position: 'relative', display: 'inline-flex', flexDirection: 'column', alignItems: 'center',
+      background: T.bg2, border: `1px solid ${T.bg3}`, borderRadius: 10,
+      padding: `${pad}px ${pad}px ${pad - 4}px`, userSelect: 'none',
+    }}>
       {isG2 && (
-        <span className="absolute -top-2.5 -right-2 text-[9px] font-black bg-amber-400 text-white px-1.5 py-0.5 rounded-full uppercase tracking-tight shadow-sm">
-          G2
-        </span>
+        <span style={{
+          position: 'absolute', top: -8, right: -8, background: T.amber, color: '#000',
+          fontSize: 8, fontWeight: 900, padding: '2px 5px', borderRadius: 99, textTransform: 'uppercase',
+        }}>G2</span>
       )}
-      <div className="flex gap-3 mb-2.5">
-        <div className="flex flex-col gap-2">
-          {leftKeys.map(k => (
-            <div key={k} className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${dotClass(k)}`} />
-          ))}
-        </div>
-        <div className="flex flex-col gap-2">
-          {rightKeys.map(k => (
-            <div key={k} className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${dotClass(k)}`} />
-          ))}
-        </div>
+      <div style={{ display: 'flex', gap: colGap, marginBottom: 8 }}>
+        {[['f', 'd', 's'], ['j', 'k', 'l']].map((col, ci) => (
+          <div key={ci} style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
+            {col.map(k => {
+              const { bg, shadow } = dotStyle(k);
+              return <div key={k} style={{ width: dotDim, height: dotDim, borderRadius: '50%', background: bg, boxShadow: shadow, transition: 'all 0.15s' }} />;
+            })}
+          </div>
+        ))}
       </div>
-      <span className="text-xs font-black font-mono text-gray-700 uppercase tracking-widest">
+      <span style={{ color: T.text1, fontSize: labelSz, fontWeight: 900, fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: 2 }}>
         {token.display === ' ' ? 'SPC' : token.display}
       </span>
     </div>
@@ -100,24 +174,27 @@ function BrailleCell({ token, pressedKeys = new Set() }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  KEY PAD VISUAL
+//  KEYPAD
 // ─────────────────────────────────────────────────────────────
 function KeyPad({ activeKeys = new Set(), wrongKeys = new Set() }) {
   const col = (keys) => (
-    <div className="flex flex-col gap-2">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {keys.map(k => {
-        const isActive = activeKeys.has(k);
-        const isWrong = wrongKeys.has(k);
+        const active = activeKeys.has(k), wrong = wrongKeys.has(k);
+        const bg = wrong ? T.red : active ? T.violet : T.bg2;
+        const border = wrong ? T.redBorder : active ? '#5b21b6' : T.bg3;
         return (
-          <div
-            key={k}
-            className={`w-14 h-14 flex flex-col items-center justify-center rounded-2xl border-b-4 font-black text-base transition-all duration-150
-              ${isWrong ? 'bg-red-500   border-red-700   text-white scale-95' :
-                isActive ? 'bg-purple-600 border-purple-800 text-white scale-95' :
-                  'bg-white      border-gray-200   text-gray-400'}`}
-          >
-            <span className="text-lg">{k.toUpperCase()}</span>
-            <span className="text-[9px] opacity-60 font-normal">Dot {KEY_TO_DOT[k]}</span>
+          <div key={k} style={{
+            width: 56, height: 56, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            background: bg, border: `1px solid ${border}`, borderBottomWidth: 3,
+            borderRadius: 12, color: (active || wrong) ? '#fff' : T.text2,
+            fontWeight: 900, transform: (active || wrong) ? 'scale(0.93)' : 'scale(1)',
+            transition: 'all 0.15s',
+            boxShadow: active ? `0 0 16px ${T.violet}50` : wrong ? `0 0 14px ${T.red}40` : 'none',
+          }}>
+            <span style={{ fontSize: 17 }}>{k.toUpperCase()}</span>
+            <span style={{ fontSize: 9, opacity: 0.55, fontWeight: 400 }}>Dot {KEY_TO_DOT[k]}</span>
           </div>
         );
       })}
@@ -125,10 +202,10 @@ function KeyPad({ activeKeys = new Set(), wrongKeys = new Set() }) {
   );
 
   return (
-    <div className="flex gap-4 justify-center items-start">
+    <div style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'flex-start' }}>
       {col(['f', 'd', 's'])}
-      <div className="flex flex-col gap-2 items-center justify-center h-full pt-4">
-        {[0, 1, 2].map(i => <div key={i} className="w-0.5 h-8 bg-gray-200 rounded" />)}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16 }}>
+        {[0, 1, 2].map(i => <div key={i} style={{ width: 1, height: 28, background: T.bg3, borderRadius: 2 }} />)}
       </div>
       {col(['j', 'k', 'l'])}
     </div>
@@ -136,48 +213,43 @@ function KeyPad({ activeKeys = new Set(), wrongKeys = new Set() }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  GRADE 2 REFERENCE TABLE
+//  G2 REFERENCE TABLE
 // ─────────────────────────────────────────────────────────────
 function G2ReferenceTable() {
   const [open, setOpen] = useState(false);
   const shown = grade2Contractions.slice(0, 40);
-
   return (
-    <div className="mt-6">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-3 bg-purple-50 hover:bg-purple-100 border border-purple-100 rounded-2xl text-sm font-black text-purple-700 transition-all"
-      >
-        <span><FontAwesomeIcon icon={faBookOpen} className="mr-2" />UEB Grade 2 Reference</span>
-        <span className="text-lg">{open ? '▲' : '▼'}</span>
+    <div style={{ marginTop: 12 }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: T.bg2, border: `1px solid ${T.bg3}`, color: T.violetLight,
+        padding: '10px 16px', borderRadius: 10, fontSize: 13, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit',
+      }}>
+        <span><FontAwesomeIcon icon={faBookOpen} style={{ marginRight: 8 }} />UEB Grade 2 Reference</span>
+        <FontAwesomeIcon icon={open ? faChevronUp : faChevronDown} />
       </button>
-
       {open && (
-        <div className="mt-3 overflow-x-auto rounded-2xl border border-gray-100 shadow-sm">
-          <table className="w-full text-sm border-collapse">
+        <div style={{ marginTop: 6, border: `1px solid ${T.bg3}`, borderRadius: 10, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
-              <tr className="bg-purple-600 text-white">
-                <th className="px-4 py-3 text-left font-black">Word / Group</th>
-                <th className="px-4 py-3 text-left font-black">Dots</th>
-                <th className="px-4 py-3 text-left font-black">Keys</th>
-                <th className="px-4 py-3 text-left font-black">Type</th>
+              <tr style={{ background: T.violet }}>
+                {['Word / Group', 'Dots', 'Keys', 'Type'].map(h => (
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 900, color: '#fff', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {shown.map((c, i) => {
                 const dotNums = c.dots.map(k => KEY_TO_DOT[k]).join('-');
                 const keys = c.dots.map(k => k.toUpperCase()).join(' ');
+                const [bg, color] = c.type === 'part' ? [T.blueDark, T.blue] : c.type === 'short' ? [T.amberDark, T.amber] : [T.bg3, T.text2];
                 return (
-                  <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-2.5 font-bold text-gray-800">{c.text}</td>
-                    <td className="px-4 py-2.5 text-gray-500 font-mono text-xs">{dotNums}</td>
-                    <td className="px-4 py-2.5 font-mono font-black text-purple-600 text-xs tracking-widest">{keys}</td>
-                    <td className="px-4 py-2.5">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase
-                        ${c.type === 'part' ? 'bg-blue-50 text-blue-600' :
-                          c.type === 'short' ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
-                        {c.type}
-                      </span>
+                  <tr key={i} style={{ background: i % 2 === 0 ? T.bg2 : T.bg1, borderBottom: `1px solid ${T.bg0}` }}>
+                    <td style={{ padding: '9px 14px', fontWeight: 700, color: T.text0 }}>{c.text}</td>
+                    <td style={{ padding: '9px 14px', fontFamily: 'monospace', color: T.text2 }}>{dotNums}</td>
+                    <td style={{ padding: '9px 14px', fontFamily: 'monospace', fontWeight: 900, color: T.violetLight, letterSpacing: 3 }}>{keys}</td>
+                    <td style={{ padding: '9px 14px' }}>
+                      <span style={{ background: bg, color, fontSize: 9, padding: '2px 7px', borderRadius: 99, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.8 }}>{c.type}</span>
                     </td>
                   </tr>
                 );
@@ -191,96 +263,95 @@ function G2ReferenceTable() {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  MODE: READING
+//  SHARED STYLES HELPERS
 // ─────────────────────────────────────────────────────────────
-function ReadingMode({ snd }) {
-  const [inputText, setInputText] = useState('');
+const card = (extra = {}) => ({
+  background: T.bg2, border: `1px solid ${T.bg3}`, borderRadius: 14, padding: 20, ...extra,
+});
+const label = { color: T.text2, fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, display: 'block', marginBottom: 10 };
+const textarea = {
+  width: '100%', height: 88, padding: 12, boxSizing: 'border-box',
+  background: T.bg1, border: `1px solid ${T.bg3}`, borderRadius: 10,
+  color: T.text0, fontFamily: 'monospace', fontSize: 13, resize: 'none', outline: 'none',
+};
+const btn = (bg, disabled = false) => ({
+  width: '100%', marginTop: 10, background: disabled ? T.bg3 : bg, color: disabled ? T.text2 : '#fff',
+  border: 'none', borderRadius: 10, padding: '12px 0', fontSize: 13, fontWeight: 900,
+  cursor: disabled ? 'not-allowed' : 'pointer', letterSpacing: 1, fontFamily: 'inherit',
+  opacity: disabled ? 0.4 : 1,
+});
+
+// ─────────────────────────────────────────────────────────────
+//  READING MODE
+// ─────────────────────────────────────────────────────────────
+function ReadingMode({ snd, inputText, setInputText }) {
   const [tokens, setTokens] = useState([]);
   const [pressedKeys, setPressedKeys] = useState(new Set());
 
   const convert = () => setTokens(textToTokens(inputText));
 
   useEffect(() => {
-    const down = (e) => {
-      const k = e.key.toLowerCase();
-      if (ALLOWED_KEYS.includes(k)) setPressedKeys(p => new Set(p).add(k));
-    };
-    const up = (e) => {
-      const k = e.key.toLowerCase();
-      if (ALLOWED_KEYS.includes(k))
-        setTimeout(() => setPressedKeys(p => { const n = new Set(p); n.delete(k); return n; }), 200);
-    };
-    window.addEventListener('keydown', down);
+    const dn = (e) => { const k = e.key.toLowerCase(); if (ALLOWED_KEYS.includes(k)) setPressedKeys(p => new Set(p).add(k)); };
+    const up = (e) => { const k = e.key.toLowerCase(); if (ALLOWED_KEYS.includes(k)) setTimeout(() => setPressedKeys(p => { const n = new Set(p); n.delete(k); return n; }), 200); };
+    window.addEventListener('keydown', dn);
     window.addEventListener('keyup', up);
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+    return () => { window.removeEventListener('keydown', dn); window.removeEventListener('keyup', up); };
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-        <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
-          Enter text to convert
-        </label>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={card()}>
+        <span style={label}>Enter text to convert</span>
         <textarea
-          className="w-full h-28 p-4 border border-gray-100 rounded-2xl text-base focus:ring-2 focus:ring-purple-200 outline-none resize-none placeholder:text-gray-300 font-medium bg-gray-50"
+          style={textarea}
           placeholder="e.g. the child and the people with knowledge..."
           value={inputText}
           onChange={e => setInputText(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), convert())}
         />
-        <button
-          onClick={convert}
-          className="w-full mt-4 bg-purple-600 text-white py-4 rounded-2xl font-black text-base hover:bg-purple-700 transition-all hover:shadow-lg active:scale-[0.98]"
-        >
-          CONVERT TO BRAILLE ↵
-        </button>
+        <button style={btn(T.violet)} onClick={convert}>CONVERT TO BRAILLE ↵</button>
       </div>
 
       {tokens.length > 0 ? (
-        <>
-          <p className="text-xs text-gray-400 text-center font-bold uppercase tracking-widest">
-            Press dot-keys freely to feel each pattern · <span className="text-amber-500">G2</span> = Grade 2 contraction
+        <div style={{ background: T.bg1, border: `1px solid ${T.bg3}`, borderRadius: 14, padding: 16 }}>
+          <p style={{ color: T.text2, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, textAlign: 'center', marginBottom: 14 }}>
+            Press dot-keys freely · <span style={{ color: T.amber }}>G2</span> = Grade 2 contraction
           </p>
-          <div className="flex flex-wrap gap-3 justify-center p-6 bg-gray-50 rounded-3xl border border-gray-100 min-h-[100px]">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', minHeight: 80 }}>
             {tokens.map((t, i) =>
               t.display === ' '
-                ? <div key={i} className="w-6" />
+                ? <div key={i} style={{ width: 16 }} />
                 : <BrailleCell key={i} token={t} pressedKeys={pressedKeys} />
             )}
           </div>
-          <G2ReferenceTable />
-        </>
+        </div>
       ) : (
-        <div className="text-center py-16 text-gray-300 font-bold italic">Nothing to display yet.</div>
+        <div style={{ color: T.text3, textAlign: 'center', padding: '40px 0', fontStyle: 'italic', fontSize: 13 }}>
+          Nothing to display yet — enter text above
+        </div>
       )}
+      <G2ReferenceTable />
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-//  MODE: TYPING
+//  TYPING MODE
 // ─────────────────────────────────────────────────────────────
-function TypingMode({ snd }) {
-  const [inputText, setInputText] = useState('');
+function TypingMode({ snd, inputText, setInputText }) {
   const [tokens, setTokens] = useState([]);
   const [started, setStarted] = useState(false);
-
   const [currentIdx, setCurrentIdx] = useState(0);
   const [pressedKeys, setPressedKeys] = useState(new Set());
   const [wrongKeys, setWrongKeys] = useState(new Set());
-  const [stats, setStats] = useState({ correct: 0, wrong: 0, completed: 0 });
   const [done, setDone] = useState(false);
+  const [flash, setFlash] = useState(null); // 'correct' | 'wrong'
 
   const startTraining = () => {
     const toks = textToTokens(inputText).filter(t => t.dots);
     if (!toks.length) return;
-    setTokens(toks);
-    setCurrentIdx(0);
-    setPressedKeys(new Set());
-    setWrongKeys(new Set());
-    setStats({ correct: 0, wrong: 0, completed: 0 });
-    setDone(false);
-    setStarted(true);
+    setTokens(toks); setCurrentIdx(0); setPressedKeys(new Set());
+    setWrongKeys(new Set()); setDone(false); setStarted(true);
   };
 
   const currentToken = tokens[currentIdx];
@@ -288,96 +359,51 @@ function TypingMode({ snd }) {
 
   useEffect(() => {
     if (!started || done) return;
-
     const onKeyDown = (e) => {
       const key = e.key.toLowerCase();
       if (!ALLOWED_KEYS.includes(key) || pressedKeys.has(key)) return;
       e.preventDefault();
-
-      const nextPressed = new Set(pressedKeys).add(key);
-      setPressedKeys(nextPressed);
-
+      const next = new Set(pressedKeys).add(key);
+      setPressedKeys(next);
       if (requiredDots.has(key)) {
-        snd.correct();
-        setStats(s => ({ ...s, correct: s.correct + 1 }));
+        snd.correct(); setFlash('correct');
       } else {
-        snd.wrong();
-        setWrongKeys(w => new Set(w).add(key));
-        setStats(s => ({ ...s, wrong: s.wrong + 1 }));
+        snd.wrong(); setFlash('wrong'); setWrongKeys(w => new Set(w).add(key));
       }
-
-      if (nextPressed.size === 6) {
-        setStats(s => ({ ...s, completed: s.completed + 1 }));
+      setTimeout(() => setFlash(null), 250);
+      if (next.size === 6) {
+        snd.complete();
         setTimeout(() => {
-          setPressedKeys(new Set());
-          setWrongKeys(new Set());
-          if (currentIdx + 1 >= tokens.length) {
-            setDone(true);
-          } else {
-            setCurrentIdx(i => i + 1);
-          }
-        }, 450);
+          setPressedKeys(new Set()); setWrongKeys(new Set());
+          if (currentIdx + 1 >= tokens.length) setDone(true);
+          else setCurrentIdx(i => i + 1);
+        }, 600);
       }
     };
-
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [started, done, pressedKeys, requiredDots, currentIdx, tokens, snd]);
 
-  if (!started) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-          <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
-            Enter practice text
-          </label>
-          <textarea
-            className="w-full h-28 p-4 border border-gray-100 rounded-2xl text-base focus:ring-2 focus:ring-purple-200 outline-none resize-none placeholder:text-gray-300 font-medium bg-gray-50"
-            placeholder="e.g. the child and the people with knowledge..."
-            value={inputText}
-            onChange={e => setInputText(e.target.value)}
-          />
-          <button
-            onClick={startTraining}
-            disabled={!inputText.trim()}
-            className="w-full mt-4 bg-green-600 text-white py-4 rounded-2xl font-black text-base hover:bg-green-700 transition-all hover:shadow-lg active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <FontAwesomeIcon icon={faRocket} className="mr-2" /> START TRAINING
-          </button>
-        </div>
-        <G2ReferenceTable />
+  if (!started) return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={card()}>
+        <span style={label}>Enter practice text</span>
+        <textarea style={textarea} placeholder="e.g. the child and the people with knowledge..." value={inputText} onChange={e => setInputText(e.target.value)} />
+        <button style={btn('#059669', !inputText.trim())} onClick={startTraining} disabled={!inputText.trim()}>
+          <FontAwesomeIcon icon={faRocket} style={{ marginRight: 8 }} />START TRAINING
+        </button>
       </div>
-    );
-  }
+      <G2ReferenceTable />
+    </div>
+  );
 
   if (done) {
-    const accuracy = stats.correct + stats.wrong > 0
-      ? Math.round((stats.correct / (stats.correct + stats.wrong)) * 100)
-      : 100;
     return (
-      <div className="bg-white p-10 rounded-3xl border border-gray-100 shadow-sm text-center space-y-6">
-        <div className="text-6xl"><FontAwesomeIcon icon={faTrophy} style={{ color: '#eab308' }} /></div>
-        <h3 className="text-2xl font-black text-gray-800">Training Complete!</h3>
-        <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
-          <div className="bg-purple-50 rounded-2xl p-4">
-            <div className="text-3xl font-black text-purple-600">{stats.completed}</div>
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mt-1">Completed</div>
-          </div>
-          <div className="bg-green-50 rounded-2xl p-4">
-            <div className="text-3xl font-black text-green-600">{stats.correct}</div>
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mt-1">Correct</div>
-          </div>
-          <div className="bg-red-50 rounded-2xl p-4">
-            <div className="text-3xl font-black text-red-500">{stats.wrong}</div>
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mt-1">Wrong</div>
-          </div>
-        </div>
-        <div className="text-4xl font-black text-purple-700">{accuracy}%</div>
-        <p className="text-sm text-gray-400 font-bold">Accuracy</p>
-        <button
-          onClick={() => setStarted(false)}
-          className="mt-4 bg-purple-600 text-white px-10 py-3 rounded-2xl font-black hover:bg-purple-700 transition-all"
-        >
+      <div style={{ ...card({ padding: 36, textAlign: 'center' }) }}>
+        <div style={{ fontSize: 52, marginBottom: 16 }}><FontAwesomeIcon icon={faTrophy} style={{ color: T.amber }} /></div>
+        <h3 style={{ color: T.text0, fontSize: 20, fontWeight: 900, marginBottom: 8 }}>Training Complete!</h3>
+        <p style={{ color: T.text2, fontSize: 13, marginBottom: 24 }}>You explored all {tokens.length} characters.</p>
+        <button onClick={() => setStarted(false)} style={{ background: T.violet, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 32px', fontSize: 13, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}>
           Practice Again
         </button>
       </div>
@@ -385,50 +411,41 @@ function TypingMode({ snd }) {
   }
 
   const dotNums = currentToken.dots.map(k => KEY_TO_DOT[k]).join('-');
+  const cardBorder = flash === 'correct' ? T.green : flash === 'wrong' ? T.red : T.bg3;
+  const cardGlow = flash === 'correct' ? `0 0 28px ${T.green}30` : flash === 'wrong' ? `0 0 28px ${T.red}30` : 'none';
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-purple-600 rounded-full transition-all duration-500"
-            style={{ width: `${(currentIdx / tokens.length) * 100}%` }}
-          />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Progress */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ flex: 1, height: 4, background: T.bg2, borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${(currentIdx / tokens.length) * 100}%`, background: T.violet, borderRadius: 99, transition: 'width 0.4s ease' }} />
         </div>
-        <span className="text-xs font-black text-gray-400">{currentIdx}/{tokens.length}</span>
+        <span style={{ color: T.text2, fontSize: 11, fontWeight: 900 }}>{currentIdx}/{tokens.length}</span>
       </div>
 
-      <div className="flex gap-3">
-        <div className="flex-1 bg-green-50 rounded-2xl p-3 text-center">
-          <div className="text-xl font-black text-green-600">{stats.correct}</div>
-          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Correct</div>
-        </div>
-        <div className="flex-1 bg-red-50 rounded-2xl p-3 text-center">
-          <div className="text-xl font-black text-red-500">{stats.wrong}</div>
-          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Wrong</div>
-        </div>
-      </div>
-
-      <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm text-center space-y-4">
+      {/* Challenge card */}
+      <div style={{ background: T.bg2, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: '28px 20px', textAlign: 'center', transition: 'border-color 0.2s, box-shadow 0.2s', boxShadow: cardGlow }}>
         {currentToken.display.length > 1 && (
-          <span className="inline-block text-xs font-black bg-amber-100 text-amber-600 px-3 py-1 rounded-full uppercase tracking-tight">
+          <span style={{ background: T.amberDark, color: T.amber, fontSize: 9, padding: '3px 10px', borderRadius: 99, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1, display: 'inline-block', marginBottom: 12 }}>
             Grade 2 Contraction
           </span>
         )}
-        <div className="text-7xl font-black text-purple-700 tracking-widest">
+        <div style={{ color: T.violetLight, fontFamily: 'monospace', fontSize: 72, fontWeight: 900, lineHeight: 1, letterSpacing: '0.08em', marginBottom: 10 }}>
           {currentToken.display.toUpperCase()}
         </div>
-        <p className="text-sm text-gray-400 font-bold">
-          Dots required: <span className="text-purple-600 font-black">{dotNums}</span>
+        <p style={{ color: T.text2, fontSize: 12, fontWeight: 700, marginBottom: 16 }}>
+          Dots: <span style={{ color: T.violetLight, fontWeight: 900 }}>{dotNums}</span>
         </p>
-        <div className="flex justify-center">
-          <BrailleCell token={currentToken} pressedKeys={pressedKeys} />
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <BrailleCell token={currentToken} pressedKeys={pressedKeys} size="lg" />
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center mb-4">
-          Press all 6 keys — green = correct · red = not needed
+      {/* Keypad */}
+      <div style={card()}>
+        <p style={{ color: T.text3, fontSize: 9, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, textAlign: 'center', marginBottom: 14 }}>
+          Press all 6 keys · <span style={{ color: T.green }}>green = correct</span> · <span style={{ color: T.red }}>red = not needed</span>
         </p>
         <KeyPad activeKeys={pressedKeys} wrongKeys={wrongKeys} />
       </div>
@@ -437,13 +454,15 @@ function TypingMode({ snd }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  MODE: BRAILLE INPUT
+//  BRAILLE INPUT MODE
 // ─────────────────────────────────────────────────────────────
 function BrailleInputMode({ snd }) {
   const [active, setActive] = useState(false);
   const [currentChord, setCurrentChord] = useState(new Set());
-  const [typedText, setTypedText] = useState('');
-  const [tokenHistory, setTokenHistory] = useState([]);
+  // Single source of truth: array of committed token strings e.g. ['t','h','the',' ','a']
+  const [tokens, setTokens] = useState([]);
+
+  const typedText = tokens.join('');
 
   const chordKey = [...currentChord].sort().join('');
   const chordLetter = dotsToLetter[chordKey];
@@ -455,117 +474,163 @@ function BrailleInputMode({ snd }) {
     const key = [...currentChord].sort().join('');
     const result = chordToContraction[key] || dotsToLetter[key];
     setCurrentChord(new Set());
-
-    if (result) {
-      setTypedText(t => t + result);
-      setTokenHistory(h => [...h, { text: result, chars: result.length }]);
-      snd.commit();
-    } else {
-      snd.wrong();
-    }
+    if (result) { setTokens(t => [...t, result]); snd.commit(); }
+    else snd.wrong();
     return !!result;
   }, [currentChord, snd]);
 
   useEffect(() => {
     if (!active) return;
-
     const onKeyDown = (e) => {
       const key = e.key.toLowerCase();
-
-      if (ALLOWED_KEYS.includes(key)) {
-        e.preventDefault();
-        setCurrentChord(p => new Set(p).add(key));
-        return;
-      }
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        commitChord();
-        return;
-      }
-      if (e.key === ' ') {
-        e.preventDefault();
-        setCurrentChord(new Set());
-        setTypedText(t => t + ' ');
-        setTokenHistory(h => [...h, { text: ' ', chars: 1 }]);
-        snd.space();
-        return;
-      }
+      if (ALLOWED_KEYS.includes(key)) { e.preventDefault(); setCurrentChord(p => new Set(p).add(key)); return; }
+      if (e.key === 'Enter') { e.preventDefault(); commitChord(); return; }
+      if (e.key === ' ') { e.preventDefault(); setCurrentChord(new Set()); setTokens(t => [...t, ' ']); snd.space(); return; }
       if (e.key === 'Backspace') {
         e.preventDefault();
-        setTokenHistory(h => {
-          if (!h.length) return h;
-          const last = h[h.length - 1];
-          setTypedText(t => t.slice(0, -last.chars));
-          snd.wrong();
-          return h.slice(0, -1);
-        });
+        setTokens(t => { if (!t.length) return t; snd.wrong(); return t.slice(0, -1); });
       }
     };
-
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [active, commitChord, snd]);
 
-  const chordMatchStyle =
-    chordWord ? 'bg-amber-50 border-amber-300 text-amber-700' :
-      chordLetter ? 'bg-green-50 border-green-300 text-green-700' :
-        currentChord.size > 0 ? 'bg-red-50 border-red-200 text-red-500' :
-          'bg-gray-50 border-gray-100 text-gray-400';
+  const [pBg, pBorder, pColor] =
+    chordWord ? [T.amberDark, T.amberBorder, T.amber] :
+      chordLetter ? [T.greenDark, T.greenBorder, T.green] :
+        currentChord.size ? [T.redDark, T.redBorder, T.red] :
+          [T.bg2, T.bg3, T.text2];
 
-  const chordMatchText =
-    chordWord ? `→ "${chordWord}" (Grade 2)` :
-      chordLetter ? `→ "${chordLetter}"` :
-        currentChord.size > 0 ? '→ unknown pattern' :
-          'Hold dot-keys, then press Enter ↵';
+  const pText = chordWord ? `→ "${chordWord}" (Grade 2)` : chordLetter ? `→ "${chordLetter}"` : currentChord.size ? '→ unknown pattern' : 'Hold dot-keys, then press Enter ↵';
 
   return (
-    <div className="space-y-5">
-      <div className={`rounded-2xl border-2 px-5 py-4 text-center font-black text-sm transition-all ${chordMatchStyle}`}>
-        <div className="text-xs font-bold opacity-60 uppercase tracking-widest mb-1">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Preview */}
+      <div style={{ background: pBg, border: `1px solid ${pBorder}`, color: pColor, borderRadius: 10, padding: '12px 16px', textAlign: 'center', transition: 'all 0.2s' }}>
+        <div style={{ fontSize: 9, fontWeight: 700, opacity: 0.65, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
           {currentChord.size > 0 ? `Active dots: ${chordDots}` : 'Chord Preview'}
         </div>
-        <div className="text-base">{chordMatchText}</div>
+        <div style={{ fontSize: 14, fontWeight: 900 }}>{pText}</div>
       </div>
 
-      <div className="min-h-[110px] p-6 bg-gray-900 text-purple-300 rounded-2xl font-mono text-2xl flex items-center border-[5px] border-gray-800 shadow-inner break-all">
+      {/* Terminal output */}
+      <div style={{
+        background: T.bg0, border: `2px solid ${T.bg3}`, borderRadius: 12, padding: '18px 20px',
+        minHeight: 96, fontFamily: 'monospace', fontSize: 22, color: T.violetLight,
+        display: 'flex', alignItems: 'center', overflowWrap: 'break-word', wordBreak: 'break-all',
+      }}>
         {typedText
-          ? <span>{typedText}<span className="ml-1 inline-block w-1.5 h-8 bg-purple-400 animate-pulse align-middle" /></span>
-          : <span className="opacity-20 italic text-lg">Start typing in Braille...</span>
+          ? <span>{typedText}<span style={{ display: 'inline-block', width: 2, height: 26, background: T.violetLight, marginLeft: 4, verticalAlign: 'middle', animation: 'brl-blink 1s step-end infinite' }} /></span>
+          : <span style={{ color: T.text3, fontSize: 14, fontStyle: 'italic' }}>Start typing in Braille...</span>
         }
       </div>
 
-      <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-        <KeyPad activeKeys={currentChord} />
-      </div>
+      {/* Keypad */}
+      <div style={card()}><KeyPad activeKeys={currentChord} /></div>
 
-      <div className="flex gap-3">
-        <button
-          onClick={() => { setActive(true); setTypedText(''); setTokenHistory([]); setCurrentChord(new Set()); }}
-          className="flex-1 bg-green-600 text-white py-3 rounded-2xl font-black hover:bg-green-700 transition-all hover:shadow-lg active:scale-[0.98]"
-        >
+      {/* Controls */}
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button onClick={() => { setActive(true); setTokens([]); setCurrentChord(new Set()); }}
+          style={{ flex: 1, background: '#059669', color: '#fff', border: 'none', borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}>
           {active ? '↺ Restart' : '▶ Start Typing'}
         </button>
-        <button
-          onClick={() => { setTypedText(''); setTokenHistory([]); setCurrentChord(new Set()); }}
-          className="flex-1 bg-gray-100 text-gray-600 py-3 rounded-2xl font-black hover:bg-red-50 hover:text-red-500 transition-all"
-        >
-          <FontAwesomeIcon icon={faTrashCan} className="mr-1" /> Clear
+        <button onClick={() => { setTokens([]); setCurrentChord(new Set()); }}
+          style={{ flex: 1, background: T.bg2, color: T.text1, border: `1px solid ${T.bg3}`, borderRadius: 10, padding: '11px 0', fontSize: 13, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <FontAwesomeIcon icon={faTrashCan} style={{ marginRight: 6 }} />Clear
         </button>
       </div>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-xs text-blue-700 font-bold space-y-1">
-        <p>• Hold dot-keys (F D S / J K L) to build a chord</p>
-        <p>• <kbd className="bg-white border border-blue-200 rounded px-1.5 py-0.5">Enter ↵</kbd> commits the letter or Grade 2 word</p>
-        <p>• <kbd className="bg-white border border-blue-200 rounded px-1.5 py-0.5">Space</kbd> adds a word gap · <kbd className="bg-white border border-blue-200 rounded px-1.5 py-0.5">Backspace</kbd> deletes last token</p>
-        <p>• Grade 2 chords (e.g. F+D+S+J+L = "and") output the full word</p>
+      {/* Tips */}
+      <div style={{ background: T.bg1, border: `1px solid ${T.blueDark}`, color: T.blue, borderRadius: 10, padding: '14px 16px', fontSize: 12, fontWeight: 700, lineHeight: 1.9 }}>
+        <div>• Hold dot-keys (F D S / J K L) to build a chord</div>
+        <div>• <kbd style={{ background: T.bg3, border: `1px solid ${T.bg4}`, borderRadius: 4, padding: '1px 6px', fontFamily: 'monospace', color: T.text0 }}>Enter ↵</kbd> commits the letter or Grade 2 word</div>
+        <div>• <kbd style={{ background: T.bg3, border: `1px solid ${T.bg4}`, borderRadius: 4, padding: '1px 6px', fontFamily: 'monospace', color: T.text0 }}>Space</kbd> word gap · <kbd style={{ background: T.bg3, border: `1px solid ${T.bg4}`, borderRadius: 4, padding: '1px 6px', fontFamily: 'monospace', color: T.text0 }}>Backspace</kbd> undo token</div>
       </div>
+
       <G2ReferenceTable />
+      <style>{`@keyframes brl-blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-//  MAIN COMPONENT
+//  LEFT PANEL — LeetCode problem description
+// ─────────────────────────────────────────────────────────────
+function ProblemPanel({ mode, tokens }) {
+  const meta = {
+    reading: { num: '001', title: 'Braille Reading', diff: 'Easy', dc: T.green, db: T.greenDark, desc: 'This module helps you to learn braille reading. It provides a way to convert English text into UEB Grade 2 dot patterns. Study each cell and understand which dot combinations encode letters and contractions.', topics: ['Grade 2', 'Dot Patterns', 'Contractions'] },
+    typing: { num: '002', title: 'Braille Chord Trainer', diff: 'Medium', dc: T.amber, db: T.amberDark, desc: 'This module helps you to learn braille typing. It provides a way to convert English text into UEB Grade 2 dot patterns. Study each cell and understand which dot combinations encode letters and contractions.', topics: ['Chord Input', 'Muscle Memory', 'Timing'] },
+    'braille-input': { num: '003', title: 'Free Braille Writer', diff: 'Hard', dc: T.red, db: T.redDark, desc: 'Compose text freely using braille chords. Hold dot-keys then press Enter to commit. Grade 2 contractions automatically output full words.', topics: ['Free Writing', 'Grade 2', 'Real-time Decode'] },
+  }[mode];
+
+  return (
+    <div style={{ color: T.text1, fontFamily: 'inherit', height: '100%', overflowY: 'auto' }}>
+      {/* Header */}
+      <div style={{ padding: '24px 24px 18px', borderBottom: `1px solid ${T.bg3}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <span style={{ color: T.text2, fontSize: 11 }}>#{meta.num}</span>
+          <span style={{ background: meta.db, color: meta.dc, fontSize: 10, padding: '2px 10px', borderRadius: 99, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>{meta.diff}</span>
+        </div>
+        <h1 style={{ color: T.text0, fontSize: 19, fontWeight: 900, fontFamily: 'Georgia, serif', letterSpacing: '-0.02em', lineHeight: 1.3 }}>{meta.title}</h1>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+          {meta.topics.map(t => (
+            <span key={t} style={{ background: T.bg3, color: T.text2, fontSize: 9, padding: '4px 10px', borderRadius: 6, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>{t}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: '20px 24px', fontSize: 13, lineHeight: 1.75, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <p style={{ color: T.text1 }}>{meta.desc}</p>
+
+        {/* Dot layout */}
+        <div style={{ background: T.bg2, border: `1px solid ${T.bg3}`, borderRadius: 12, padding: 18 }}>
+          <p style={{ color: T.text2, fontSize: 9, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 14 }}>Keyboard → Dot Mapping</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, maxWidth: 230, margin: '0 auto' }}>
+            {[{ k: 'F', d: 1 }, { k: 'J', d: 4 }, { k: 'D', d: 2 }, { k: 'K', d: 5 }, { k: 'S', d: 3 }, { k: 'L', d: 6 }].map(({ k, d }) => (
+              <div key={k} style={{ background: T.bg1, border: `1px solid ${T.bg3}`, borderRadius: 8, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ color: T.violetLight, fontSize: 15, fontWeight: 900 }}>{k}</span>
+                <span style={{ color: T.text2, fontSize: 10 }}>Dot {d}</span>
+                <div style={{ width: 9, height: 9, borderRadius: '50%', background: T.violetLight, boxShadow: `0 0 6px ${T.violetLight}80`, flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Token preview */}
+        {tokens.filter(t => t.display !== ' ').length > 0 && (
+          <div style={{ background: T.bg2, border: `1px solid ${T.bg3}`, borderRadius: 12, padding: 16 }}>
+            <p style={{ color: T.text2, fontSize: 9, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Parsed Tokens</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {tokens.filter(t => t.display !== ' ').slice(0, 14).map((t, i) => <BrailleCell key={i} token={t} size="sm" />)}
+              {tokens.filter(t => t.display !== ' ').length > 14 && (
+                <span style={{ color: T.text2, fontSize: 11, alignSelf: 'center' }}>+{tokens.filter(t => t.display !== ' ').length - 14} more</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Constraints */}
+        <div>
+          <p style={{ color: T.text0, fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Constraints</p>
+          {[
+            ['Keys', <><code style={{ background: T.bg3, color: T.violetLight, padding: '1px 6px', borderRadius: 4, fontFamily: 'monospace' }}>F D S J K L</code> → Dots 1–6</>],
+            ['Grade 2', 'Contractions auto-detected from UEB standard'],
+            ['Chord', 'All 6 keys pressed as one simultaneous gesture'],
+          ].map(([lbl, desc]) => (
+            <div key={lbl} style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: `1px solid ${T.bg3}` }}>
+              <span style={{ color: T.text2, fontSize: 11, fontWeight: 900, minWidth: 58, flexShrink: 0 }}>{lbl}</span>
+              <span style={{ color: T.text1, fontSize: 12 }}>{desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+//  ROOT
 // ─────────────────────────────────────────────────────────────
 const MODES = [
   { id: 'reading', icon: faEye, label: 'Reading' },
@@ -576,43 +641,81 @@ const MODES = [
 export default function BrailleTrainer() {
   const [mode, setMode] = useState('reading');
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [inputText, setInputText] = useState('');
   const snd = useAudio(soundEnabled);
-
-  const switchMode = (m) => setMode(m);
+  const tokens = useMemo(() => inputText ? textToTokens(inputText) : [], [inputText]);
 
   return (
-    <div className="max-w-2xl mx-auto p-4 md:p-8 min-h-screen font-sans selection:bg-purple-100">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900">Braille Trainer</h1>
-          <p className="text-sm text-gray-400 font-medium">UEB Grade 2 · Unified English Braille</p>
+    <div style={{ background: T.bg0, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace" }}>
+
+      {/* TOP BAR */}
+      <div style={{ background: T.bg1, borderBottom: `1px solid ${T.bg3}`, height: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', flexShrink: 0, gap: 12 }}>
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div style={{ background: T.violet, width: 28, height: 28, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <FontAwesomeIcon icon={faBolt} style={{ color: '#fff', fontSize: 13 }} />
+          </div>
+          <span style={{ color: T.text0, fontWeight: 900, fontSize: 14 }}>BrailleTrainer</span>
+          <span style={{ color: T.bg4, fontSize: 13 }}>·</span>
+          <span style={{ color: T.text2, fontSize: 10 }}>UEB Grade 2</span>
         </div>
-        <button
-          onClick={() => setSoundEnabled(s => !s)}
-          className={`self-start sm:self-auto px-4 py-2 rounded-xl border-2 text-sm font-black transition-all
-            ${soundEnabled ? 'border-purple-200 text-purple-600 bg-purple-50' : 'border-gray-200 text-gray-400 bg-white'}`}
-        >
-          {soundEnabled ? <><FontAwesomeIcon icon={faVolumeHigh} className="mr-1" /> Sound On</> : <><FontAwesomeIcon icon={faVolumeXmark} className="mr-1" /> Sound Off</>}
+
+        {/* Mode tabs */}
+        <div style={{ background: T.bg2, border: `1px solid ${T.bg3}`, borderRadius: 10, padding: 3, display: 'flex', gap: 2 }}>
+          {MODES.map(m => (
+            <button key={m.id} onClick={() => setMode(m.id)} style={{
+              background: mode === m.id ? T.violet : 'transparent',
+              color: mode === m.id ? '#fff' : T.text2,
+              border: 'none', borderRadius: 7, padding: '5px 13px',
+              fontSize: 12, fontWeight: 900, cursor: 'pointer',
+              transition: 'all 0.15s', fontFamily: 'inherit',
+            }}>
+              <FontAwesomeIcon icon={m.icon} style={{ marginRight: 6 }} />{m.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Sound toggle */}
+        <button onClick={() => setSoundEnabled(s => !s)} style={{
+          background: soundEnabled ? '#1e1b4b' : T.bg2,
+          border: `1px solid ${soundEnabled ? '#4c1d95' : T.bg3}`,
+          color: soundEnabled ? T.violetLight : T.text2,
+          borderRadius: 8, padding: '5px 12px', fontSize: 11, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+        }}>
+          <FontAwesomeIcon icon={soundEnabled ? faVolumeHigh : faVolumeXmark} style={{ marginRight: 5 }} />
+          {soundEnabled ? 'Sound On' : 'Sound Off'}
         </button>
       </div>
 
-      <div className="flex bg-gray-100 p-1.5 rounded-2xl mb-8">
-        {MODES.map(m => (
-          <button
-            key={m.id}
-            onClick={() => switchMode(m.id)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-black transition-all
-              ${mode === m.id ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-400 hover:text-gray-700'}`}
-          >
-            <span><FontAwesomeIcon icon={m.icon} /></span>
-            <span className="hidden sm:inline">{m.label}</span>
-          </button>
-        ))}
+      {/* SPLIT BODY */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+        {/* LEFT — problem panel */}
+        <div style={{ width: '38%', maxWidth: 420, minWidth: 280, borderRight: `1px solid ${T.bg3}`, background: T.bg1, overflowY: 'auto', flexShrink: 0 }}>
+          <ProblemPanel mode={mode} tokens={tokens} />
+        </div>
+
+        {/* Divider */}
+        <div style={{ width: 3, background: T.bg3, flexShrink: 0 }} />
+
+        {/* RIGHT — practice */}
+        <div style={{ flex: 1, background: T.bg0, overflowY: 'auto' }}>
+          <div style={{ padding: 24, maxWidth: 580, margin: '0 auto' }}>
+            {mode === 'reading' && <ReadingMode snd={snd} inputText={inputText} setInputText={setInputText} />}
+            {mode === 'typing' && <TypingMode snd={snd} inputText={inputText} setInputText={setInputText} />}
+            {mode === 'braille-input' && <BrailleInputMode snd={snd} />}
+          </div>
+        </div>
       </div>
 
-      {mode === 'reading' && <ReadingMode snd={snd} />}
-      {mode === 'typing' && <TypingMode snd={snd} />}
-      {mode === 'braille-input' && <BrailleInputMode snd={snd} />}
+      {/* STATUS BAR */}
+      <div style={{ background: T.violet, height: 22, fontSize: 10, color: 'rgba(255,255,255,0.65)', padding: '0 16px', display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0, fontWeight: 700 }}>
+        <span>⬡ UEB Grade 2 Braille</span>
+        <span style={{ opacity: 0.35 }}>│</span>
+        <span>F D S = Dots 1-2-3</span>
+        <span style={{ opacity: 0.35 }}>│</span>
+        <span>J K L = Dots 4-5-6</span>
+        <span style={{ marginLeft: 'auto' }}>Unified English Braille Standard</span>
+      </div>
     </div>
   );
 }
