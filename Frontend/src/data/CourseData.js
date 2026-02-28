@@ -123,23 +123,8 @@ export const COURSES = {
         { time: 20, text: "Let's try adding 3 and 4 on the abacus together." },
         { time: 26, text: "Move 3 beads, then 4 more — count them all and you get 7!" },
       ],
-    },
-    {
-      id: "m4",
-      subject: "maths",
-      title: "Multiplication Tables",
-      duration: "18:45",
-      level: "Intermediate",
-      videoUrl: `${AWS_BASE_URL}/maths/multiplication.mp4`,
-      thumbnail: null,
-      description:
-        "Fun songs and patterns to master the times tables from 1 to 10.",
-      transcript: [
-        { time: 0, text: "Multiplication is repeated addition!" },
-        { time: 6, text: "3 times 4 means adding 3 four times: 3+3+3+3 = 12." },
-        { time: 14, text: "Let's sing the 2 times table together." },
-      ],
-    },
+    }
+
   ],
 
   science: [
