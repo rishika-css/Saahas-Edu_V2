@@ -80,7 +80,7 @@ export default function TestPage() {
       setError(err.message || 'Failed to load questions');
       setStage('error');
     }
-  }, [user]);
+  }, [user, trackerReady]);
 
   // ── When tracker becomes ready, start if questions are loaded ──
   useEffect(() => {
