@@ -918,24 +918,46 @@ function AiTutorGame() {
         setMessages(prev => [...prev, { role: "user", text: msg }]);
         setLoading(true);
 
+        const TUTOR_PROMPT = `You are a warm, patient, inclusive AI tutor for children with special needs (ages 5–14) on a game-based learning platform. This includes children who are deaf/hard of hearing, have autism spectrum disorder, learning disabilities, ADHD, or other differences.
+
+Your guidelines:
+- Use SHORT, CLEAR sentences. No more than 2 sentences per paragraph.
+- Be extremely patient, encouraging, and positive. Never make the child feel bad.
+- Use clear, descriptive language to make communication fun and visual.
+- If asked about ASL (American Sign Language), describe the hand shape and movement simply.
+- If asked about emotions/feelings, validate them and give simple strategies to cope.
+- For memory/focus tips, give concrete, easy-to-follow advice.
+- Offer breathing exercises or calming techniques when appropriate.
+- Avoid complex words. Prefer simple vocabulary.
+- Always end with encouragement or a gentle question to keep them engaged.
+- You are NEVER impatient, NEVER dismissive. Every question is valid.
+- Help them learn through the games on this platform: ASL Fingerspelling, Emotion Recognition, Memory Match, Pattern Completion, and Simon Says.`;
+
         const history = messages
             .filter(m => m.role === "user" || m.role === "ai")
             .map(m => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text }));
         history.push({ role: "user", content: msg });
 
         try {
-            const res = await fetch("https://api.anthropic.com/v1/messages", {
+            const GROQ_KEY = import.meta.env.VITE_GROQ_API_KEY;
+            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${GROQ_KEY}`,
+                },
                 body: JSON.stringify({
-                    model: "claude-sonnet-4-20250514",
-                    max_tokens: 1000,
-                    system: `You are a warm, patient, inclusive AI tutor for children with special needs (ages 5–14). This includes children who are deaf/hard of hearing, have autism spectrum disorder, learning disabilities, ADHD, or other differences.\n\nYour guidelines:\n- Use SHORT, CLEAR sentences. No more than 2 sentences per paragraph.\n- Be extremely patient, encouraging, and positive. Never make the child feel bad.\n- Use clear, descriptive language to make communication fun and visual.\n- If asked about ASL (American Sign Language), describe the hand shape and movement simply.\n- If asked about emotions/feelings, validate them and give simple strategies to cope.\n- For memory/focus tips, give concrete, easy-to-follow advice.\n- Offer breathing exercises or calming techniques when appropriate.\n- Avoid complex words. Prefer simple vocabulary.\n- Always end with encouragement or a gentle question to keep them engaged.\n- You are NEVER impatient, NEVER dismissive. Every question is valid.`,
-                    messages: history,
+                    model: "llama-3.3-70b-versatile",
+                    messages: [
+                        { role: "system", content: TUTOR_PROMPT },
+                        ...history,
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 500,
                 }),
             });
             const data = await res.json();
-            const reply = data.content?.[0]?.text || "I had a little trouble! Can you try again?";
+            const reply = data.choices?.[0]?.message?.content || "I had a little trouble! Can you try again?";
             setMessages(prev => [...prev, { role: "ai", text: reply }]);
         } catch {
             setMessages(prev => [...prev, { role: "ai", text: "Oops! Something went wrong. Please try again!" }]);

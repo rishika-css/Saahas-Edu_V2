@@ -12,7 +12,8 @@ import {
   faVolumeHigh,
   faVolumeXmark,
   faPaperPlane,
-  faLock
+  faLock,
+  faBrain
 } from "@fortawesome/free-solid-svg-icons";
 
 /* ================================================================
@@ -44,11 +45,9 @@ export default function JournalPage() {
   const { getScores, latched } = useBehaviourAI() || {};
   const scores = getScores ? getScores() : null;
 
+  const GREETING = "Hello! What's on your mind today?";
   const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      text: "Hi, I'm Aura — your safe space to think out loud. What's on your mind today?"
-    }
+    { role: "assistant", text: GREETING }
   ]);
 
   const [inputText, setInputText] = useState("");
@@ -61,97 +60,187 @@ export default function JournalPage() {
   const chatEndRef = useRef(null);
   const inputRef = useRef("");
   const autoSendRef = useRef(false);
+  const [interimText, setInterimText] = useState("");
+  const listeningRef = useRef(false);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  // Speak the greeting on mount + cleanup on unmount
+  useEffect(() => {
+    const t = setTimeout(() => speak(GREETING), 500);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(silenceTimerRef.current);
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
   function resetSilenceTimer() {
     clearTimeout(silenceTimerRef.current);
     silenceTimerRef.current = setTimeout(() => {
+      console.log("[Speech] 5s silence — auto-sending. Text:", inputRef.current);
       autoSendRef.current = true;
       stopListening();
-    }, 3000);
-  }
-
-  function createRecognition() {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return null;
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-IN";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onresult = (event) => {
-      let transcript = "";
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript + " ";
-      }
-      if (transcript.trim()) {
-        setInputText(prev => {
-          const next = prev + transcript;
-          inputRef.current = next;
-          return next;
-        });
-        resetSilenceTimer();
-      }
-    };
-
-    recognition.onend = () => {
-      if (recognitionRef.current && !autoSendRef.current) {
-        try { recognition.start(); } catch (_) { }
-      }
-    };
-
-    recognition.onerror = (e) => {
-      if (e.error === "not-allowed") {
-        alert("Microphone permission denied.");
-        recognitionRef.current = null;
-        setListening(false);
-      }
-    };
-
-    return recognition;
+    }, 5000);
   }
 
   function startListening() {
     if (recognitionRef.current) return;
 
-    const recognition = createRecognition();
-    if (!recognition) {
-      alert("Speech recognition not supported.");
+    // IMPORTANT: stop any ongoing speech synthesis first — it blocks the mic
+    window.speechSynthesis?.cancel();
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome.");
       return;
     }
 
+    // Reset state
     setInputText("");
+    setInterimText("");
     inputRef.current = "";
     autoSendRef.current = false;
-
-    recognitionRef.current = recognition;
+    listeningRef.current = true;
     setListening(true);
-    recognition.start();
+
+    // Small delay to ensure speechSynthesis releases the audio channel
+    let networkRetries = 0;
+    const MAX_RETRIES = 3;
+
+    setTimeout(() => {
+      if (!listeningRef.current) return; // user may have cancelled
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-IN";
+      recognition.continuous = false;       // single utterance — most reliable
+      recognition.interimResults = true;    // show words in real time
+
+      recognition.onresult = (event) => {
+        networkRetries = 0; // successful result = connection works
+        let finalText = "";
+        let interim = "";
+        for (let i = 0; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalText += transcript;
+          } else {
+            interim += transcript;
+          }
+        }
+        console.log("[Speech] result — final:", JSON.stringify(finalText), "interim:", JSON.stringify(interim));
+
+        if (finalText) {
+          setInputText(prev => {
+            const next = (prev + " " + finalText).trim();
+            inputRef.current = next;
+            return next;
+          });
+          setInterimText("");
+          resetSilenceTimer();
+        } else if (interim) {
+          setInterimText(interim);
+          resetSilenceTimer();
+        }
+      };
+
+      recognition.onerror = (e) => {
+        console.warn("[Speech] error:", e.error);
+
+        // Fatal errors — stop completely
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          alert("Microphone permission denied. Please allow microphone in browser settings.");
+          recognitionRef.current = null;
+          listeningRef.current = false;
+          setListening(false);
+          return;
+        }
+
+        // Network error — Google's speech servers unreachable
+        if (e.error === "network") {
+          networkRetries++;
+          console.warn("[Speech] network error, retry", networkRetries, "of", MAX_RETRIES);
+          if (networkRetries >= MAX_RETRIES) {
+            alert(
+              "Speech recognition can't connect to Google's servers.\n\n" +
+              "Please check:\n" +
+              "1. You have a working internet connection\n" +
+              "2. You're accessing the app via localhost (not an IP address)\n" +
+              "3. No firewall/proxy is blocking Google services"
+            );
+            recognitionRef.current = null;
+            listeningRef.current = false;
+            setListening(false);
+            return;
+          }
+          // Will retry via onend below
+        }
+        // "no-speech" / "aborted" are normal — let onend restart
+      };
+
+      recognition.onend = () => {
+        console.log("[Speech] onend — listeningRef:", listeningRef.current, "autoSend:", autoSendRef.current);
+        // Auto-restart for next utterance (single-utterance chaining)
+        if (listeningRef.current && !autoSendRef.current) {
+          try {
+            recognition.start();
+            console.log("[Speech] restarted for next utterance");
+          } catch (err) {
+            console.warn("[Speech] restart failed:", err);
+          }
+        }
+      };
+
+      recognitionRef.current = recognition;
+      try {
+        recognition.start();
+        console.log("[Speech] started");
+      } catch (err) {
+        console.error("[Speech] failed to start:", err);
+        recognitionRef.current = null;
+        listeningRef.current = false;
+        setListening(false);
+      }
+    }, 300);
   }
 
   function stopListening() {
     clearTimeout(silenceTimerRef.current);
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
-    setListening(false);
+    const textToSend = inputRef.current.trim();
+    const shouldAutoSend = autoSendRef.current && textToSend;
 
-    if (autoSendRef.current && inputRef.current.trim()) {
+    listeningRef.current = false;
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null; // prevent auto-restart
+      try { recognitionRef.current.stop(); } catch (_) { }
+      recognitionRef.current = null;
+    }
+    setListening(false);
+    setInterimText("");
+
+    if (shouldAutoSend) {
       autoSendRef.current = false;
-      setTimeout(() => handleSend(), 100);
+      console.log("[Speech] auto-sending:", textToSend);
+      setTimeout(() => handleSend(), 200);
     }
     autoSendRef.current = false;
   }
 
   function speak(text) {
-    if (!voiceMode || !window.speechSynthesis) return;
+    if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const clean = text.replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "");
+    const utterance = new SpeechSynthesisUtterance(clean);
     utterance.lang = "en-IN";
+    utterance.rate = 0.95;
+    utterance.pitch = 1.05;
     window.speechSynthesis.speak(utterance);
   }
 
@@ -275,17 +364,71 @@ export default function JournalPage() {
               <div ref={chatEndRef} />
             </div>
 
-            <div className="px-5 py-4 border-t flex gap-2">
-              <textarea
-                value={inputText}
-                onChange={e => { setInputText(e.target.value); inputRef.current = e.target.value; }}
-                rows={2}
-                className="flex-1 border rounded p-1 text-white bg-yellow-500"
-                placeholder="Type here..."
-              />
-              <button onClick={handleSend} className="bg-yellow-500 text-white px-4 rounded">
-                <FontAwesomeIcon icon={faPaperPlane} />
-              </button>
+            <div className="px-5 py-4 border-t border-white/10">
+              {listening && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#6366f1", fontWeight: 600, marginBottom: 8 }} className="animate-pulse">
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />
+                  Listening... auto-sends after 5s of silence
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                <textarea
+                  value={inputText + (interimText ? interimText : "")}
+                  onChange={e => { setInputText(e.target.value); inputRef.current = e.target.value; }}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                  rows={2}
+                  placeholder={listening ? "Speak now — I'm listening..." : "Type here or press the mic... (Enter to send)"}
+                  style={{
+                    flex: 1, padding: "10px 14px", borderRadius: 16,
+                    border: listening ? "2px solid #6366f1" : "1.5px solid #e5e7eb",
+                    resize: "none", fontSize: 14, outline: "none",
+                    background: "rgba(255,255,255,0.85)", fontFamily: "inherit", lineHeight: 1.5,
+                    color: "#1f2937",
+                  }}
+                />
+                <button
+                  onClick={listening ? stopListening : startListening}
+                  style={{
+                    width: 44, height: 44, borderRadius: "50%", border: "none",
+                    background: listening ? "linear-gradient(135deg, #ef4444, #f97316)" : "linear-gradient(135deg, #6366f1, #8b5cf6)",
+                    color: "white", fontSize: 18, cursor: "pointer", flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    animation: listening ? "mhPulse 1.5s ease-in-out infinite" : "none",
+                  }}
+                >
+                  <FontAwesomeIcon icon={listening ? faStop : faMicrophone} />
+                </button>
+                <button
+                  onClick={() => { setVoiceMode(v => !v); if (voiceMode) window.speechSynthesis?.cancel(); }}
+                  style={{
+                    width: 44, height: 44, borderRadius: "50%", border: "none",
+                    background: voiceMode ? "#1f2937" : "#e5e7eb",
+                    color: voiceMode ? "white" : "#6b7280",
+                    fontSize: 16, cursor: "pointer", flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <FontAwesomeIcon icon={voiceMode ? faVolumeHigh : faVolumeXmark} />
+                </button>
+                <button
+                  onClick={handleSend}
+                  disabled={!inputText.trim() || loading}
+                  style={{
+                    height: 44, borderRadius: 22, border: "none",
+                    padding: "0 20px",
+                    background: inputText.trim() && !loading ? "linear-gradient(135deg, #7c3aed, #6366f1)" : "#e5e7eb",
+                    color: inputText.trim() && !loading ? "white" : "#9ca3af",
+                    fontSize: 13, fontWeight: 700, cursor: inputText.trim() && !loading ? "pointer" : "default",
+                    flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <FontAwesomeIcon icon={faBrain} /> Reflect with AI
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center", marginTop: 8 }}>
+                <FontAwesomeIcon icon={faLock} style={{ marginRight: 4 }} /> Private · Speak freely, auto-sends when you pause
+              </p>
             </div>
 
           </div>

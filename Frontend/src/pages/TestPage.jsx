@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAccessibility } from '../context/AccessibilityContext';
@@ -7,9 +7,15 @@ import QuestionCard from '../components/QuestionCard';
 import Timer from '../components/Timer';
 import ProgressBar from '../components/ProgressBar';
 import BehaviorTracker from '../components/BehaviorTracker';
-import AccessibilityToolbar from '../components/AccessibilityToolbar';
+import ActionFeedPanel from '../components/ActionFeedPanel';
+import useBehaviourAI from '../hooks/useBehaviourAI';
+import BehaviourInsightPanel from '../components/mentalheath/BehaviourInsightPanel';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBrain, faMoon, faEye, faShuffle, faClock, faHourglassHalf, faFrown, faTrophy, faHandsClapping, faDumbbell, faClipboardList, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import {
+  faBrain, faMoon, faEye, faShuffle, faClock,
+  faHourglassHalf, faFrown, faTrophy, faHandsClapping,
+  faDumbbell, faClipboardList, faCheck, faTimes
+} from '@fortawesome/free-solid-svg-icons';
 import FocusTileOverlay from '../components/FocusTileOverlay';
 import AdhdDetectionModal from '../components/AdhdDetectionModal';
 import { useAdhdMouseDetection } from '../hooks/useAdhdMouseDetection';
@@ -29,9 +35,20 @@ export default function TestPage() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
+  // Tracker-ready gating
+  const [trackerReady, setTrackerReady] = useState(false);
+  const apiDataRef = useRef(null); // stores API response until tracker is ready
+
   // ADHD detection
   const [showAdhdModal, setShowAdhdModal] = useState(false);
   const [adhdDismissed, setAdhdDismissed] = useState(false);
+
+  // Action feed
+  const { addAction, Panel: actionPanel } = ActionFeedPanel();
+
+  // AIML behaviour tracking
+  const { getScores, latched } = useBehaviourAI() || {};
+  const scores = getScores ? getScores() : null;
 
   const handleAdhdDetected = useCallback(() => {
     if (!adhdDismissed && !showAdhdModal) {
@@ -41,19 +58,17 @@ export default function TestPage() {
 
   useAdhdMouseDetection(handleAdhdDetected, stage === 'active' && !adhdDismissed);
 
-  // Start test on mount
+  // ── Start test API call on mount ──
   useEffect(() => {
     if (!user) return;
-
     const studentId = user.id || user._id;
     testsAPI.start(studentId)
       .then((data) => {
-        setSessionId(data.sessionId);
-        setTotalQuestions(data.totalQuestions);
-        setTimeRemaining(data.timeAlloted);
-        setCurrentQuestion(data.firstQuestion);
-        setCurrentIndex(0);
-        setStage('active');
+        apiDataRef.current = data;
+        // If tracker is already ready, transition immediately
+        if (trackerReady) {
+          applyApiData(data);
+        }
       })
       .catch((err) => {
         setError(err.message || 'Failed to start test');
@@ -61,10 +76,33 @@ export default function TestPage() {
       });
   }, [user]);
 
+  // ── When tracker becomes ready, start the test if API data is available ──
+  useEffect(() => {
+    if (trackerReady && apiDataRef.current && stage === 'loading') {
+      applyApiData(apiDataRef.current);
+    }
+  }, [trackerReady, stage]);
+
+  function applyApiData(data) {
+    setSessionId(data.sessionId);
+    setTotalQuestions(data.totalQuestions);
+    setTimeRemaining(data.timeAlloted);
+    setCurrentQuestion(data.firstQuestion);
+    setCurrentIndex(0);
+    setStage('active');
+  }
+
+  const handleTrackerReady = useCallback(() => {
+    setTrackerReady(true);
+  }, []);
+
+  // ── Action callbacks from BehaviorTracker ──
+  const handleAction = useCallback((type, detail) => {
+    addAction(type, detail);
+  }, [addAction]);
+
   const handleAnswer = async (option) => {
     setSelectedAnswer(option);
-
-    // Log rapid skip
     if (window.__logRapidSkip) window.__logRapidSkip();
 
     try {
@@ -81,12 +119,10 @@ export default function TestPage() {
 
   const handleNext = async () => {
     const nextIdx = currentIndex + 1;
-
     if (nextIdx >= totalQuestions) {
       handleSubmit();
       return;
     }
-
     try {
       const data = await testsAPI.nextQuestion(sessionId, nextIdx);
       if (data.done) {
@@ -131,12 +167,38 @@ export default function TestPage() {
         justifyContent: 'center', background: '#fdf6f0',
       }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '12px' }}><FontAwesomeIcon icon={faHourglassHalf} /></div>
-          <p style={{ color: '#7a5c4a', fontWeight: 600 }}>Preparing your test...</p>
+          <div style={{ fontSize: '3rem', marginBottom: '12px', color: '#f4845f' }}>
+            <FontAwesomeIcon icon={faHourglassHalf} className="fa-spin" />
+          </div>
+          <p style={{ color: '#7a5c4a', fontWeight: 600, fontSize: '1.1rem' }}>Preparing your test...</p>
           <p style={{ color: '#b5a08a', fontSize: '0.85rem', marginTop: '8px' }}>
             Loading AI models for gaze & behavior tracking...
           </p>
+          <div style={{
+            width: 200, height: 6, background: '#f0ddd0',
+            borderRadius: 999, overflow: 'hidden', margin: '16px auto 0',
+          }}>
+            <div style={{
+              height: '100%', width: '60%',
+              background: 'linear-gradient(90deg, #f4845f, #f9b49a)',
+              borderRadius: 999,
+              animation: 'pulse 1.5s ease-in-out infinite',
+            }} />
+          </div>
         </div>
+
+        {/* BehaviorTracker mounts during loading so the AI model starts loading */}
+        {user && (
+          <div style={{ position: 'fixed', bottom: 16, right: 16, zIndex: 999 }}>
+            <BehaviorTracker
+              studentId={user.id || user._id}
+              sessionId="loading"
+              onTimerAdjustment={() => { }}
+              onTrackerReady={handleTrackerReady}
+              onAction={handleAction}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -261,7 +323,7 @@ export default function TestPage() {
     <div style={{
       minHeight: '100vh', background: '#fdf6f0', padding: '24px 20px',
     }}>
-      <div style={{ maxWidth: '720px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{
           display: 'flex', justifyContent: 'space-between',
@@ -280,52 +342,65 @@ export default function TestPage() {
         {/* Progress */}
         <ProgressBar current={currentIndex + 1} total={totalQuestions} />
 
-        {/* Question */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-          <QuestionCard
-            question={currentQuestion}
-            selectedAnswer={selectedAnswer}
-            onAnswer={handleAnswer}
-          />
-        </div>
+        {/* Main content — question + side panels */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20, marginTop: 20 }}>
+          {/* Left — Question + Nav */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <QuestionCard
+                question={currentQuestion}
+                selectedAnswer={selectedAnswer}
+                onAnswer={handleAnswer}
+              />
+            </div>
 
-        {/* Navigation */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between',
-          marginTop: '24px', gap: '12px',
-        }}>
-          <button
-            onClick={handleSubmit}
-            style={{
-              padding: '12px 24px', borderRadius: '12px',
-              border: '2px solid #f0ddd0', background: 'white',
-              color: '#7a5c4a', fontWeight: 600, cursor: 'pointer',
-            }}
-          >
-            Submit Test
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={!selectedAnswer}
-            style={{
-              padding: '12px 32px', borderRadius: '12px',
-              border: 'none',
-              background: selectedAnswer
-                ? 'linear-gradient(135deg, #f4845f, #f9b49a)'
-                : '#e0d5cc',
-              color: 'white', fontWeight: 700, cursor: selectedAnswer ? 'pointer' : 'default',
-              opacity: selectedAnswer ? 1 : 0.6,
-            }}
-          >
-            {currentIndex + 1 >= totalQuestions ? 'Finish' : 'Next →'}
-          </button>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between',
+              marginTop: '24px', gap: '12px',
+            }}>
+              <button
+                onClick={handleSubmit}
+                style={{
+                  padding: '12px 24px', borderRadius: '12px',
+                  border: '2px solid #f0ddd0', background: 'white',
+                  color: '#7a5c4a', fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Submit Test
+              </button>
+              <button
+                onClick={handleNext}
+                disabled={!selectedAnswer}
+                style={{
+                  padding: '12px 32px', borderRadius: '12px',
+                  border: 'none',
+                  background: selectedAnswer
+                    ? 'linear-gradient(135deg, #f4845f, #f9b49a)'
+                    : '#e0d5cc',
+                  color: 'white', fontWeight: 700, cursor: selectedAnswer ? 'pointer' : 'default',
+                  opacity: selectedAnswer ? 1 : 0.6,
+                }}
+              >
+                {currentIndex + 1 >= totalQuestions ? 'Finish' : 'Next →'}
+              </button>
+            </div>
+          </div>
+
+          {/* Right — Live Action Feed + AIML Insight */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {actionPanel}
+
+            <div style={{
+              background: 'rgba(255,255,255,0.95)', borderRadius: 14,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.08)', padding: '14px 16px',
+            }}>
+              <BehaviourInsightPanel scores={scores} latched={latched} />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Accessibility toolbar (side panel with toggles) */}
-      <AccessibilityToolbar />
-
-      {/* ADHD Focus Mode overlay (blurs non-hovered elements) */}
+      {/* ADHD Focus Mode overlay */}
       <FocusTileOverlay />
 
       {/* AI-powered ADHD Detection Modal */}
@@ -349,6 +424,8 @@ export default function TestPage() {
           studentId={user.id || user._id}
           sessionId={sessionId}
           onTimerAdjustment={handleTimerAdjustment}
+          onTrackerReady={handleTrackerReady}
+          onAction={handleAction}
         />
       )}
     </div>

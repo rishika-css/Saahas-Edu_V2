@@ -1,22 +1,24 @@
 import { useEffect, useRef, useCallback } from 'react';
 import * as tf from '@tensorflow/tfjs';
-import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
+import * as blazeface from '@tensorflow-models/blazeface';
 
 /**
- * AI-powered gaze tracking using TensorFlow Face Landmarks Detection.
+ * Lightweight gaze tracking using BlazeFace (tiny, <200KB model).
  *
- * Detects the user's face via webcam and analyzes eye landmark positions
- * to determine if the user is looking away from the screen. Also detects
- * when no face is visible at all.
+ * Detects the user's face via webcam and estimates gaze direction from
+ * face position and eye/nose landmark positions. Also detects when
+ * no face is visible (user left the screen).
  *
- * @param {Function} onGazeAway - Called when user's gaze drifts away from screen
- * @param {Function} onFaceNotDetected - Called when no face is found in the frame
- * @param {React.RefObject} videoRef - Ref to the <video> element used for rendering
- * @param {Function} onReady - Called once the model is loaded and tracking begins
+ * BlazeFace loads in <1 second vs FaceMesh's 5-10 seconds.
+ *
+ * @param {Function} onGazeAway - Called when user's gaze drifts away
+ * @param {Function} onFaceNotDetected - Called when no face is found
+ * @param {React.RefObject} videoRef - Ref to the <video> element
+ * @param {Function} onReady - Called once the model is loaded
  */
 export function useGazeTracking(onGazeAway, onFaceNotDetected, videoRef, onReady) {
     const streamRef = useRef(null);
-    const detectorRef = useRef(null);
+    const modelRef = useRef(null);
     const animFrameRef = useRef(null);
     const readyFired = useRef(false);
     const gazeAwayFrames = useRef(0);
@@ -25,64 +27,64 @@ export function useGazeTracking(onGazeAway, onFaceNotDetected, videoRef, onReady
     const lastFaceAlert = useRef(0);
 
     // Thresholds
-    const GAZE_AWAY_FRAME_THRESHOLD = 15;   // ~0.5s of looking away before alert
-    const NO_FACE_FRAME_THRESHOLD = 30;     // ~1s of no face before alert
-    const ALERT_COOLDOWN_MS = 8000;          // minimum time between alerts
+    const GAZE_AWAY_FRAME_THRESHOLD = 18;   // ~0.6s of looking away
+    const NO_FACE_FRAME_THRESHOLD = 30;     // ~1s of no face
+    const ALERT_COOLDOWN_MS = 8000;
 
-    // Analyze iris position relative to eye bounding box to determine gaze direction
-    const isGazingAway = useCallback((face) => {
+    // Analyze face landmarks from BlazeFace to estimate gaze direction
+    const isGazingAway = useCallback((prediction) => {
         try {
-            const keypoints = face.keypoints;
-            if (!keypoints || keypoints.length < 400) return false;
+            // BlazeFace provides:
+            // - topLeft, bottomRight: face bounding box
+            // - landmarks: [rightEye, leftEye, nose, mouth, rightEar, leftEar]
+            const landmarks = prediction.landmarks;
+            if (!landmarks || landmarks.length < 6) return false;
 
-            // MediaPipe Face Mesh iris landmarks (right eye: 468-472, left eye: 473-477)
-            // Eye corners for reference frame
-            const leftEyeInner = keypoints.find(k => k.name === 'leftEyeIris') || keypoints[473];
-            const rightEyeInner = keypoints.find(k => k.name === 'rightEyeIris') || keypoints[468];
+            const rightEye = landmarks[0];
+            const leftEye = landmarks[1];
+            const nose = landmarks[2];
+            const rightEar = landmarks[4];
+            const leftEar = landmarks[5];
 
-            if (!leftEyeInner || !rightEyeInner) return false;
+            // Face width from ear to ear
+            const faceWidth = Math.abs(rightEar[0] - leftEar[0]);
+            if (faceWidth < 20) return false;
 
-            // Get eye corner landmarks for bounding reference
-            // Left eye corners: 362 (inner), 263 (outer)
-            // Right eye corners: 133 (inner), 33 (outer)
-            const leftInner = keypoints[362];
-            const leftOuter = keypoints[263];
-            const rightInner = keypoints[133];
-            const rightOuter = keypoints[33];
+            // Eye center
+            const eyeCenterX = (rightEye[0] + leftEye[0]) / 2;
 
-            if (!leftInner || !leftOuter || !rightInner || !rightOuter) return false;
+            // Nose position relative to eye center — indicates head turn
+            const noseOffsetX = nose[0] - eyeCenterX;
+            const turnRatio = noseOffsetX / faceWidth;
 
-            // Calculate iris position ratio within eye (0 = inner corner, 1 = outer corner)
-            const leftEyeWidth = Math.abs(leftOuter.x - leftInner.x);
-            const rightEyeWidth = Math.abs(rightOuter.x - rightInner.x);
+            // If nose is too far left or right of eye center, face is turned away
+            // Threshold: |turnRatio| > 0.25 means significant head turn
+            if (Math.abs(turnRatio) > 0.25) return true;
 
-            if (leftEyeWidth < 5 || rightEyeWidth < 5) return false;
+            // Check if face is too far from center of frame (looking at something else)
+            const videoWidth = videoRef.current?.videoWidth || 320;
+            const faceCenterX = (prediction.topLeft[0] + prediction.bottomRight[0]) / 2;
+            const frameCenterX = videoWidth / 2;
+            const offsetFromCenter = Math.abs(faceCenterX - frameCenterX) / videoWidth;
 
-            const leftIrisRatio = (leftEyeInner.x - leftInner.x) / leftEyeWidth;
-            const rightIrisRatio = (rightEyeInner.x - rightInner.x) / rightEyeWidth;
+            // Face too far from frame center means they're looking sideways
+            if (offsetFromCenter > 0.35) return true;
 
-            const avgRatio = (leftIrisRatio + rightIrisRatio) / 2;
-
-            // If iris is too far to either side, user is looking away
-            // Center is ~0.4-0.6, looking away is < 0.2 or > 0.8
-            if (avgRatio < 0.15 || avgRatio > 0.85) return true;
-
-            // Also check vertical gaze (looking up/down)
-            const leftEyeTop = keypoints[386];
-            const leftEyeBottom = keypoints[374];
-            if (leftEyeTop && leftEyeBottom) {
-                const eyeHeight = Math.abs(leftEyeBottom.y - leftEyeTop.y);
-                if (eyeHeight > 2) {
-                    const irisVertRatio = (leftEyeInner.y - leftEyeTop.y) / eyeHeight;
-                    if (irisVertRatio < 0.1 || irisVertRatio > 0.9) return true;
-                }
+            // Vertical check: looking up/down
+            const eyeCenterY = (rightEye[1] + leftEye[1]) / 2;
+            const noseOffsetY = nose[1] - eyeCenterY;
+            const faceHeight = Math.abs(prediction.bottomRight[1] - prediction.topLeft[1]);
+            if (faceHeight > 20) {
+                const vertRatio = noseOffsetY / faceHeight;
+                // Very small or very large ratio means extreme head tilt
+                if (vertRatio < 0.05 || vertRatio > 0.45) return true;
             }
 
             return false;
         } catch {
             return false;
         }
-    }, []);
+    }, [videoRef]);
 
     useEffect(() => {
         let cancelled = false;
@@ -107,27 +109,20 @@ export function useGazeTracking(onGazeAway, onFaceNotDetected, videoRef, onReady
 
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
-                    // Wait for video to be ready
                     await new Promise(resolve => {
                         videoRef.current.onloadeddata = resolve;
                     });
                 }
 
-                // 3. Load Face Landmarks Detection model
-                const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-                const detector = await faceLandmarksDetection.createDetector(model, {
-                    runtime: 'tfjs',
-                    refineLandmarks: true,  // enables iris landmarks
-                    maxFaces: 1,
-                });
+                // 3. Load BlazeFace model (tiny, ~200KB, loads in <1s)
+                const model = await blazeface.load();
 
                 if (cancelled) {
-                    detector.dispose();
                     stream.getTracks().forEach(t => t.stop());
                     return;
                 }
 
-                detectorRef.current = detector;
+                modelRef.current = model;
 
                 // Signal ready
                 if (!readyFired.current) {
@@ -135,7 +130,7 @@ export function useGazeTracking(onGazeAway, onFaceNotDetected, videoRef, onReady
                     onReady?.();
                 }
 
-                // 4. Start detection loop
+                // 4. Detection loop (~30fps)
                 const detectLoop = async () => {
                     if (cancelled || !videoRef.current || videoRef.current.readyState < 2) {
                         animFrameRef.current = requestAnimationFrame(detectLoop);
@@ -143,14 +138,10 @@ export function useGazeTracking(onGazeAway, onFaceNotDetected, videoRef, onReady
                     }
 
                     try {
-                        const faces = await detector.estimateFaces(videoRef.current, {
-                            flipHorizontal: false,
-                        });
-
+                        const predictions = await model.estimateFaces(videoRef.current, false);
                         const now = Date.now();
 
-                        if (!faces || faces.length === 0) {
-                            // No face detected
+                        if (!predictions || predictions.length === 0) {
                             noFaceFrames.current += 1;
                             gazeAwayFrames.current = 0;
 
@@ -164,7 +155,7 @@ export function useGazeTracking(onGazeAway, onFaceNotDetected, videoRef, onReady
                             }
                         } else {
                             noFaceFrames.current = 0;
-                            const face = faces[0];
+                            const face = predictions[0];
 
                             if (isGazingAway(face)) {
                                 gazeAwayFrames.current += 1;
@@ -181,7 +172,7 @@ export function useGazeTracking(onGazeAway, onFaceNotDetected, videoRef, onReady
                                 gazeAwayFrames.current = 0;
                             }
                         }
-                    } catch (err) {
+                    } catch {
                         // Detection error — skip frame
                     }
 
@@ -205,9 +196,6 @@ export function useGazeTracking(onGazeAway, onFaceNotDetected, videoRef, onReady
         return () => {
             cancelled = true;
             if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-            if (detectorRef.current) {
-                try { detectorRef.current.dispose(); } catch { }
-            }
             if (streamRef.current) {
                 streamRef.current.getTracks().forEach(t => t.stop());
             }

@@ -5,7 +5,7 @@ import { useBehaviorLogger } from "../hooks/useBehaviorLogger";
 import { useInactivityTracking } from "../hooks/useInactivityTracking";
 import { useGazeTracking } from "../hooks/useGazeTracking";
 
-function BehaviorTracker({ studentId, sessionId, onTimerAdjustment, onTrackerReady }) {
+function BehaviorTracker({ studentId, sessionId, onTimerAdjustment, onTrackerReady, onAction }) {
   const { logEvent } = useBehaviorLogger(studentId, sessionId);
   const lastSkipTime = useRef(null);
   const skipCountRef = useRef(0);
@@ -13,25 +13,28 @@ function BehaviorTracker({ studentId, sessionId, onTimerAdjustment, onTrackerRea
   const [isReady, setIsReady] = useState(false);
 
   const handleIdle = useCallback(async () => {
+    onAction?.("idle", "User inactive for 10 seconds");
     const result = await logEvent("idle", { note: "User inactive for 10 seconds" });
     if (result?.timerAdjustment?.adjusted) {
       onTimerAdjustment(result.timerAdjustment.newTime, result.timerAdjustment.reasons);
     }
-  }, [logEvent, onTimerAdjustment]);
+  }, [logEvent, onTimerAdjustment, onAction]);
 
   const handleGazeAway = useCallback(async () => {
+    onAction?.("gaze_away", "Gaze deviated from screen");
     const result = await logEvent("gaze_away", { note: "Gaze deviated from screen" });
     if (result?.timerAdjustment?.adjusted) {
       onTimerAdjustment(result.timerAdjustment.newTime, result.timerAdjustment.reasons);
     }
-  }, [logEvent, onTimerAdjustment]);
+  }, [logEvent, onTimerAdjustment, onAction]);
 
   const handleFaceNotDetected = useCallback(async () => {
+    onAction?.("face_not_detected", "No face detected");
     const result = await logEvent("face_not_detected", { note: "No face detected" });
     if (result?.timerAdjustment?.adjusted) {
       onTimerAdjustment(result.timerAdjustment.newTime, result.timerAdjustment.reasons);
     }
-  }, [logEvent, onTimerAdjustment]);
+  }, [logEvent, onTimerAdjustment, onAction]);
 
   const handleReady = useCallback(() => {
     setIsReady(true);
@@ -41,6 +44,7 @@ function BehaviorTracker({ studentId, sessionId, onTimerAdjustment, onTrackerRea
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.hidden) {
+        onAction?.("tab_switch", "Student switched tab");
         const result = await logEvent("tab_switch", { note: "Student switched tab" });
         if (result?.timerAdjustment?.adjusted) {
           onTimerAdjustment(result.timerAdjustment.newTime, result.timerAdjustment.reasons);
@@ -49,7 +53,7 @@ function BehaviorTracker({ studentId, sessionId, onTimerAdjustment, onTrackerRea
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [logEvent, onTimerAdjustment]);
+  }, [logEvent, onTimerAdjustment, onAction]);
 
   useInactivityTracking(handleIdle, 10000);
   useGazeTracking(handleGazeAway, handleFaceNotDetected, videoRef, handleReady);
@@ -60,6 +64,7 @@ function BehaviorTracker({ studentId, sessionId, onTimerAdjustment, onTrackerRea
       if (lastSkipTime.current && now - lastSkipTime.current < 2000) {
         skipCountRef.current += 1;
         if (skipCountRef.current >= 2) {
+          onAction?.("rapid_skip", "Rapid skipping detected");
           const result = await logEvent("rapid_skip", { note: "Rapid skipping detected" });
           if (result?.timerAdjustment?.adjusted) {
             onTimerAdjustment(result.timerAdjustment.newTime, result.timerAdjustment.reasons);
@@ -73,7 +78,7 @@ function BehaviorTracker({ studentId, sessionId, onTimerAdjustment, onTrackerRea
       lastSkipTime.current = now;
     };
     return () => { window.__logRapidSkip = null; };
-  }, [logEvent, onTimerAdjustment]);
+  }, [logEvent, onTimerAdjustment, onAction]);
 
   return (
     <div style={{
