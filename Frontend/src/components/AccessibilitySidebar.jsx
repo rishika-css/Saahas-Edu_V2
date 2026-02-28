@@ -138,49 +138,7 @@ function AIBadge({ status, active, scores }) {
   );
 }
 
-/* ── Focus mode: find the nearest meaningful block under cursor ── */
-function findFocusTarget(el) {
-  if (!el || el === document.body || el === document.documentElement) return null;
-
-  // Skip sidebar, navbar, fixed overlays
-  if (el.closest("aside, nav, header, [class*='z-[99']")) return null;
-
-  // Walk up and find the best container — a visible block with reasonable size
-  let best = null;
-  let cur = el;
-  const MIN_W = 120, MIN_H = 60, MAX_W_RATIO = 0.92;
-  const vpW = window.innerWidth;
-
-  while (cur && cur !== document.body && cur !== document.documentElement) {
-    const tag = cur.tagName;
-
-    // Skip inline elements
-    if (tag === "SPAN" || tag === "A" || tag === "STRONG" || tag === "EM" || tag === "B" || tag === "I" || tag === "LABEL") {
-      cur = cur.parentElement;
-      continue;
-    }
-
-    const rect = cur.getBoundingClientRect();
-    const w = rect.width, h = rect.height;
-
-    // Skip elements that are too small or take up the entire viewport width
-    if (w < MIN_W || h < MIN_H) {
-      cur = cur.parentElement;
-      continue;
-    }
-    if (w > vpW * MAX_W_RATIO) {
-      // This is a full-width wrapper — keep looking but save as fallback
-      if (!best) best = cur;
-      cur = cur.parentElement;
-      continue;
-    }
-
-    // Good candidate — a block that's not full-width and has visible size
-    return cur;
-  }
-
-  return best;
-}
+/* (findFocusTarget removed — ADHD now uses line-traversal instead of element spotlight) */
 
 /* ================================================================
   MAIN SIDEBAR COMPONENT
@@ -278,103 +236,72 @@ export default function AccessibilitySidebar() {
     };
   }, [narrating]);
 
-  /* ── ADHD Focus Mode: Overlay spotlight ── */
-  const spotlightRef = useRef(false);
-  const spotlightFn = useRef(null);
-  const overlayRef = useRef(null);
-  const lastFocused = useRef(null);
+  /* ── ADHD Focus Mode: Line-Traversal Reading Guide ──
+     Two fixed overlays (top blur + bottom blur) leave a clear
+     horizontal strip (~60px) at the cursor's Y position.
+     Works universally — no DOM manipulation, no z-index tricks. */
+  const focusActiveRef = useRef(false);
+  const focusMoveFn = useRef(null);
+  const topBandRef = useRef(null);
+  const botBandRef = useRef(null);
+  const BAND_HEIGHT = 180;
 
-  const enableSpotlight = useCallback(() => {
-    if (spotlightRef.current) return;
-    spotlightRef.current = true;
+  const makeBand = (id, pos) => {
+    const d = document.createElement("div");
+    d.id = id;
+    d.style.cssText = `
+      position: fixed; left: 0; right: 0; ${pos}: 0; z-index: 9000;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+      pointer-events: none;
+      transition: height 0.08s linear, opacity 0.3s ease;
+    `;
+    document.body.appendChild(d);
+    return d;
+  };
 
-    // Create the dark overlay
-    if (!overlayRef.current) {
-      const ov = document.createElement("div");
-      ov.id = "adhd-focus-overlay";
-      ov.style.cssText = `
-        position: fixed; inset: 0; z-index: 900;
-        background: rgba(0, 0, 0, 0.7);
-        pointer-events: none;
-        transition: opacity 0.3s ease;
-      `;
-      document.body.appendChild(ov);
-      overlayRef.current = ov;
-    }
-    overlayRef.current.style.opacity = "1";
+  const enableFocusLine = useCallback(() => {
+    if (focusActiveRef.current) return;
+    focusActiveRef.current = true;
 
-    spotlightFn.current = (e) => {
-      // Don't spotlight sidebar elements
-      if (e.target.closest("aside, nav, #adhd-focus-overlay")) return;
+    if (!topBandRef.current) topBandRef.current = makeBand("adhd-top-band", "top");
+    if (!botBandRef.current) botBandRef.current = makeBand("adhd-bot-band", "bottom");
+    topBandRef.current.style.height = "0";
+    topBandRef.current.style.opacity = "1";
+    botBandRef.current.style.height = "100vh";
+    botBandRef.current.style.opacity = "1";
 
-      const el = document.elementFromPoint(e.clientX, e.clientY);
-      if (!el) return;
-      const target = findFocusTarget(el);
-
-      // Same element? Skip
-      if (target === lastFocused.current) return;
-
-      // Remove spotlight from previous element
-      if (lastFocused.current) {
-        lastFocused.current.style.position = lastFocused.current.dataset.origPosition || "";
-        lastFocused.current.style.zIndex = lastFocused.current.dataset.origZIndex || "";
-        lastFocused.current.style.outline = "";
-        lastFocused.current.style.outlineOffset = "";
-        lastFocused.current.style.borderRadius = lastFocused.current.dataset.origRadius || "";
-        delete lastFocused.current.dataset.origPosition;
-        delete lastFocused.current.dataset.origZIndex;
-        delete lastFocused.current.dataset.origRadius;
-        lastFocused.current = null;
-      }
-
-      // Add spotlight to new element
-      if (target) {
-        target.dataset.origPosition = target.style.position || "";
-        target.dataset.origZIndex = target.style.zIndex || "";
-        target.dataset.origRadius = target.style.borderRadius || "";
-        const cs = getComputedStyle(target);
-        if (cs.position === "static") target.style.position = "relative";
-        target.style.zIndex = "901";
-        target.style.outline = "2px solid rgba(59, 130, 246, 0.5)";
-        target.style.outlineOffset = "4px";
-        if (!target.style.borderRadius) target.style.borderRadius = "12px";
-        lastFocused.current = target;
-      }
+    focusMoveFn.current = (e) => {
+      const y = e.clientY;
+      const half = BAND_HEIGHT / 2;
+      const topH = Math.max(0, y - half);
+      const botH = Math.max(0, window.innerHeight - y - half);
+      if (topBandRef.current) topBandRef.current.style.height = topH + "px";
+      if (botBandRef.current) botBandRef.current.style.height = botH + "px";
     };
-    document.addEventListener("mousemove", spotlightFn.current);
+    document.addEventListener("mousemove", focusMoveFn.current);
   }, []);
 
-  const disableSpotlight = useCallback(() => {
-    spotlightRef.current = false;
-    if (spotlightFn.current) {
-      document.removeEventListener("mousemove", spotlightFn.current);
-      spotlightFn.current = null;
+  const disableFocusLine = useCallback(() => {
+    focusActiveRef.current = false;
+    if (focusMoveFn.current) {
+      document.removeEventListener("mousemove", focusMoveFn.current);
+      focusMoveFn.current = null;
     }
-    // Clean up focused element
-    if (lastFocused.current) {
-      lastFocused.current.style.position = lastFocused.current.dataset.origPosition || "";
-      lastFocused.current.style.zIndex = lastFocused.current.dataset.origZIndex || "";
-      lastFocused.current.style.outline = "";
-      lastFocused.current.style.outlineOffset = "";
-      lastFocused.current.style.borderRadius = lastFocused.current.dataset.origRadius || "";
-      lastFocused.current = null;
-    }
-    // Remove overlay
-    if (overlayRef.current) {
-      overlayRef.current.style.opacity = "0";
-      setTimeout(() => {
-        if (overlayRef.current && !spotlightRef.current) {
-          overlayRef.current.remove();
-          overlayRef.current = null;
-        }
-      }, 300);
-    }
+    [topBandRef, botBandRef].forEach(ref => {
+      if (ref.current) {
+        ref.current.style.opacity = "0";
+        const el = ref.current;
+        setTimeout(() => { if (!focusActiveRef.current) el.remove(); }, 300);
+        ref.current = null;
+      }
+    });
   }, []);
 
   useEffect(() => {
-    if (settings.adhd) enableSpotlight(); else disableSpotlight();
-    return () => disableSpotlight();
-  }, [settings.adhd, enableSpotlight, disableSpotlight]);
+    if (settings.adhd) enableFocusLine(); else disableFocusLine();
+    return () => disableFocusLine();
+  }, [settings.adhd, enableFocusLine, disableFocusLine]);
 
   /* ── Motor mode (click magnet) ── */
   const motorFn = useRef(null);

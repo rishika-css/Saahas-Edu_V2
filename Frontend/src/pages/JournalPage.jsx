@@ -13,7 +13,7 @@ import { faRainbow, faSpa, faPhone, faMicrophone, faStop, faVolumeHigh, faVolume
 ================================================================ */
 
 const GEMINI_API_KEY = "AIzaSyA22MNyFeGohlBUrGGouDRAqak-faORYyE";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 const SYSTEM_PROMPT = `You are a warm, empathetic mental health journal companion called "Aura" for a safe private journaling app used in India.
 
 Your personality:
