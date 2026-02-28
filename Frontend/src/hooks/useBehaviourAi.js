@@ -79,7 +79,7 @@ const clamp = v => Math.min(1, Math.max(0, v));
 /* ================================================================
    HOOK
 ================================================================ */
-export default function useBehaviourAI({ onDetect } = {}) {
+export default function useBehaviourAi({ onDetect } = {}) {
   /* All raw data lives in a ref — never causes re-renders */
   const raw = useRef({
     pageLoadTime: Date.now(),
