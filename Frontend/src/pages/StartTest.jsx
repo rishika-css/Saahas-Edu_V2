@@ -8,16 +8,7 @@ import { faTimesCircle, faBrain } from '@fortawesome/free-solid-svg-icons';
 function StartTest() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    startTest();
-  }, []);
 
   const startTest = async () => {
     try {
@@ -33,9 +24,16 @@ function StartTest() {
       navigate("/test");
     } catch (err) {
       setError(err.response?.data?.error || "Something went wrong. Please try again.");
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    startTest();
+  }, []);
 
   if (error) {
     return (

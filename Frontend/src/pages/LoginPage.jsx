@@ -9,10 +9,10 @@ import LoginForm from "../components/auth/LoginForm";
 export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center px-4 selection:bg-[#0071e3] selection:text-white relative overflow-hidden">
-      
+
       {/* 1. Background Texture (Safe & Lightweight) */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 opacity-[0.03]" 
+      <div
+        className="fixed inset-0 pointer-events-none z-0 opacity-[0.03]"
         style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/topography.png')` }}
       />
 
@@ -21,7 +21,7 @@ export default function LoginPage() {
       <div className="absolute -top-20 -left-20 w-96 h-96 bg-gray-300/50 blur-[100px] rounded-full pointer-events-none" />
 
       {/* 3. Main Login Container */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -29,14 +29,14 @@ export default function LoginPage() {
       >
         {/* Header Section */}
         <div className="text-center mb-10">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             className="w-12 h-12 bg-black rounded-xl flex items-center justify-center text-white text-lg font-bold italic mx-auto mb-6 shadow-xl"
           >
             S
           </motion.div>
-          
+
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-[#1d1d1f] antialiased">
             Sign in to Saahas.
           </h1>
@@ -52,7 +52,7 @@ export default function LoginPage() {
               Enter your ID.
             </h2>
           </div>
-          
+
           {/* Your LoginForm component remains untouched */}
           <div className="relative z-20">
             <LoginForm />

@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import useBehaviourAI from "../../hooks/useBehaviourAI";
+import useBehaviourAi from "../../hooks/useBehaviourAi";
 import { useAuth } from "../../context/AuthContext";
 import { moodAPI, dashboardAPI } from "../../services/api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -42,13 +42,13 @@ const QUOTES = [
 export default function MentalHealthDashboard() {
 
   /* AUTH */
-  const { user } = useAuth();
+  useAuth();
 
   /* NAVIGATION */
   const navigate = useNavigate();
 
   /* Behaviour AI SAFE */
-  const behaviourAI = useBehaviourAI() || {};
+  const behaviourAI = useBehaviourAi() || {};
 
   const scores = behaviourAI?.scores || {};
   const latched = behaviourAI?.latched || {};
@@ -56,7 +56,7 @@ export default function MentalHealthDashboard() {
   /* Mood State */
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodSubmitted, setMoodSubmitted] = useState(false);
-  const [streak, setStreak] = useState(0);
+  const [, setStreak] = useState(0);
   const [moodLoading, setMoodLoading] = useState(false);
 
   /* Quotes */

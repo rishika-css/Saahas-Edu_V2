@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faStar, faSmile, faMeh, faDumbbell, faBed, faEye, faCamera, faForward, faExchangeAlt, faClock, faBullseye, faCheckCircle, faTimesCircle, faRedo } from '@fortawesome/free-solid-svg-icons';
+import { faStar, faSmile, faMeh, faDumbbell, faBed, faEye, faCamera, faForward, faExchangeAlt, faClock, faBullseye, faCheckCircle, faTimesCircle, faRedo, faBrain, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 
 function Results() {
   const navigate = useNavigate();

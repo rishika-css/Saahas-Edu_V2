@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
-import { motion, useSpring, useScroll, useTransform } from "framer-motion";
+import { motion, useSpring } from "framer-motion";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBookOpen, faCalculator, faMicroscope, faBolt } from '@fortawesome/free-solid-svg-icons';
 
@@ -125,7 +125,7 @@ function ThreeHero() {
 }
 
 // ─── Course Card (Lando Style) ───────────────────────────────────────────
-function CourseCard({ emoji, title, color, accent, topics, delay, onClick }) {
+function CourseCard({ emoji, title, topics, delay, onClick }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}

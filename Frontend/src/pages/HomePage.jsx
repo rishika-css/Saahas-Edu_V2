@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
+import React, { useRef } from "react";
+import { motion, useScroll, useSpring } from "framer-motion";
 import { Link } from "react-router-dom";
 import Navbar from '../components/common/Navbar';
 import { useAuth } from '../context/AuthContext';

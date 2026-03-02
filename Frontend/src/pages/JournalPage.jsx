@@ -1,17 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import Navbar from "../components/common/Navbar";
-import useBehaviourAI from "../hooks/useBehaviourAI";
+import useBehaviourAi from "../hooks/useBehaviourAi";
 import BehaviourInsightPanel from "../components/mentalheath/BehaviourInsightPanel";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faRainbow,
   faSpa,
-  faPhone,
   faMicrophone,
   faStop,
   faVolumeHigh,
   faVolumeXmark,
-  faPaperPlane,
   faLock,
   faBrain
 } from "@fortawesome/free-solid-svg-icons";
@@ -42,7 +40,7 @@ Kiran Mental Health Helpline 1800-599-0019 (free, 24/7, multilingual).`;
 
 export default function JournalPage() {
 
-  const { getScores, latched } = useBehaviourAI() || {};
+  const { getScores, latched } = useBehaviourAi() || {};
   const scores = getScores ? getScores() : null;
 
   const GREETING = "Hello! What's on your mind today?";

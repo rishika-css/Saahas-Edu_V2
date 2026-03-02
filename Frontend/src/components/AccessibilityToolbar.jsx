@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAccessibility } from "../context/AccessibilityContext";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMoon, faSquare, faBookOpen, faBullseye, faLightbulb, faXmark, faUniversalAccess } from '@fortawesome/free-solid-svg-icons';
+import { faMoon, faBookOpen, faBullseye, faLightbulb, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 function ToggleSwitch({ label, icon, value, onChange, description }) {
   return (
