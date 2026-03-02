@@ -14,7 +14,7 @@
 ================================================================ */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import useBehaviourAI from "../hooks/useBehaviourAI";
+import useBehaviourAi from "../hooks/useBehaviourAi";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faBullseye, faBookOpen, faMouse, faFaceFrown, faMoon, faCircle, faBrain, faVolumeHigh, faGear, faXmark } from '@fortawesome/free-solid-svg-icons';
 
@@ -396,7 +396,7 @@ export default function AccessibilitySidebar() {
   }, [showToast, setSetting]);
 
   /* ── AI engine hook ── */
-  const behaviourAI = useBehaviourAI({ onDetect: handleDetect });
+  const behaviourAI = useBehaviourAi({ onDetect: handleDetect });
 
   /* ── Live score polling for badge bars ── */
   const getScores = behaviourAI.getScores;
