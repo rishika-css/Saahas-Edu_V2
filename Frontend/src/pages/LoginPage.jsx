@@ -58,22 +58,7 @@ export default function LoginPage() {
             <LoginForm />
           </div>
 
-          {/* Create Account Link */}
-          <div className="mt-8 pt-8 border-t border-black/5 text-center">
-            <p className="text-[13px] font-semibold text-[#86868b]">
-              New to Saahas?{" "}
-              <button className="text-[#0071e3] font-bold hover:underline transition-all">
-                Create yours now.
-              </button>
-            </p>
-          </div>
-        </div>
 
-        {/* Fine Print */}
-        <div className="mt-12 text-center opacity-30 group">
-          <p className="text-[11px] font-bold text-black uppercase tracking-[0.2em] group-hover:opacity-100 transition-opacity">
-            Secure Authentication // Saahas 2026
-          </p>
         </div>
       </motion.div>
     </div>
